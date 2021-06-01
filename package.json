@@ -1,22 +1,22 @@
 {
   "name": "@ixs/v2-periphery",
-  "version": "1.1.0-beta.0",
-  "description": "🎚 Peripheral smart contracts for interacting with Uniswap V2",
+  "version": "1.0.0",
+  "description": "🎚 Peripheral smart contracts for interacting with Ixs V2",
   "engines": {
     "node": ">=10"
   },
-  "homepage": "https://uniswap.org",
+  "homepage": "https://ixswap.io",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/uniswap-v2-periphery"
+    "url": "https://github.com/IX-Swap/v2-periphery"
   },
   "files": [
     "build",
     "contracts"
   ],
   "dependencies": {
-    "@uniswap/lib": "4.0.1-alpha",
-    "@uniswap/v2-core": "1.0.0"
+    "@ixs/lib": "1.x.x",
+    "@ixs/v2-core": "1.x.x"
   },
   "devDependencies": {
     "@types/chai": "^4.2.6",

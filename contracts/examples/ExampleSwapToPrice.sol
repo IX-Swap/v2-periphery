@@ -35,17 +35,19 @@ contract ExampleSwapToPrice {
         uint256 deadline
     ) public {
         // true price is expressed as a ratio, so both values must be non-zero
-        require(truePriceTokenA != 0 && truePriceTokenB != 0, "ExampleSwapToPrice: ZERO_PRICE");
+        require(truePriceTokenA != 0 && truePriceTokenB != 0, 'ExampleSwapToPrice: ZERO_PRICE');
         // caller can specify 0 for either if they wish to swap in only one direction, but not both
-        require(maxSpendTokenA != 0 || maxSpendTokenB != 0, "ExampleSwapToPrice: ZERO_SPEND");
+        require(maxSpendTokenA != 0 || maxSpendTokenB != 0, 'ExampleSwapToPrice: ZERO_SPEND');
 
         bool aToB;
         uint256 amountIn;
         {
             (uint256 reserveA, uint256 reserveB) = IxsV2Library.getReserves(factory, tokenA, tokenB);
             (aToB, amountIn) = IxsV2LiquidityMathLibrary.computeProfitMaximizingTrade(
-                truePriceTokenA, truePriceTokenB,
-                reserveA, reserveB
+                truePriceTokenA,
+                truePriceTokenB,
+                reserveA,
+                reserveB
             );
         }
 

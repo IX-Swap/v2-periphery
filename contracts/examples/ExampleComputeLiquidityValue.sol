@@ -18,13 +18,14 @@ contract ExampleComputeLiquidityValue {
         uint256 truePriceTokenA,
         uint256 truePriceTokenB
     ) external view returns (uint256 reserveA, uint256 reserveB) {
-        return IxsV2LiquidityMathLibrary.getReservesAfterArbitrage(
-            factory,
-            tokenA,
-            tokenB,
-            truePriceTokenA,
-            truePriceTokenB
-        );
+        return
+            IxsV2LiquidityMathLibrary.getReservesAfterArbitrage(
+                factory,
+                tokenA,
+                tokenB,
+                truePriceTokenA,
+                truePriceTokenB
+            );
     }
 
     // see IxsV2LiquidityMathLibrary#getLiquidityValue
@@ -32,16 +33,8 @@ contract ExampleComputeLiquidityValue {
         address tokenA,
         address tokenB,
         uint256 liquidityAmount
-    ) external view returns (
-        uint256 tokenAAmount,
-        uint256 tokenBAmount
-    ) {
-        return IxsV2LiquidityMathLibrary.getLiquidityValue(
-            factory,
-            tokenA,
-            tokenB,
-            liquidityAmount
-        );
+    ) external view returns (uint256 tokenAAmount, uint256 tokenBAmount) {
+        return IxsV2LiquidityMathLibrary.getLiquidityValue(factory, tokenA, tokenB, liquidityAmount);
     }
 
     // see IxsV2LiquidityMathLibrary#getLiquidityValueAfterArbitrageToPrice
@@ -51,18 +44,16 @@ contract ExampleComputeLiquidityValue {
         uint256 truePriceTokenA,
         uint256 truePriceTokenB,
         uint256 liquidityAmount
-    ) external view returns (
-        uint256 tokenAAmount,
-        uint256 tokenBAmount
-    ) {
-        return IxsV2LiquidityMathLibrary.getLiquidityValueAfterArbitrageToPrice(
-            factory,
-            tokenA,
-            tokenB,
-            truePriceTokenA,
-            truePriceTokenB,
-            liquidityAmount
-        );
+    ) external view returns (uint256 tokenAAmount, uint256 tokenBAmount) {
+        return
+            IxsV2LiquidityMathLibrary.getLiquidityValueAfterArbitrageToPrice(
+                factory,
+                tokenA,
+                tokenB,
+                truePriceTokenA,
+                truePriceTokenB,
+                liquidityAmount
+            );
     }
 
     // test function to measure the gas cost of the above function
@@ -72,10 +63,8 @@ contract ExampleComputeLiquidityValue {
         uint256 truePriceTokenA,
         uint256 truePriceTokenB,
         uint256 liquidityAmount
-    ) external view returns (
-        uint256
-    ) {
-        uint gasBefore = gasleft();
+    ) external view returns (uint256) {
+        uint256 gasBefore = gasleft();
         IxsV2LiquidityMathLibrary.getLiquidityValueAfterArbitrageToPrice(
             factory,
             tokenA,
@@ -84,7 +73,7 @@ contract ExampleComputeLiquidityValue {
             truePriceTokenB,
             liquidityAmount
         );
-        uint gasAfter = gasleft();
+        uint256 gasAfter = gasleft();
         return gasBefore - gasAfter;
     }
 }

@@ -12,19 +12,23 @@ import '../libraries/IxsV2Library.sol';
 contract ExampleOracleSimple {
     using FixedPoint for *;
 
-    uint public constant PERIOD = 24 hours;
+    uint256 public constant PERIOD = 24 hours;
 
     IIxsV2Pair immutable pair;
     address public immutable token0;
     address public immutable token1;
 
-    uint    public price0CumulativeLast;
-    uint    public price1CumulativeLast;
-    uint32  public blockTimestampLast;
+    uint256 public price0CumulativeLast;
+    uint256 public price1CumulativeLast;
+    uint32 public blockTimestampLast;
     FixedPoint.uq112x112 public price0Average;
     FixedPoint.uq112x112 public price1Average;
 
-    constructor(address factory, address tokenA, address tokenB) public {
+    constructor(
+        address factory,
+        address tokenA,
+        address tokenB
+    ) public {
         IIxsV2Pair _pair = IIxsV2Pair(IxsV2Library.pairFor(factory, tokenA, tokenB));
         pair = _pair;
         token0 = _pair.token0();
@@ -38,7 +42,7 @@ contract ExampleOracleSimple {
     }
 
     function update() external {
-        (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
+        (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) =
             IxsV2OracleLibrary.currentCumulativePrices(address(pair));
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
@@ -56,7 +60,7 @@ contract ExampleOracleSimple {
     }
 
     // note this will always return 0 before update has been called successfully for the first time.
-    function consult(address token, uint amountIn) external view returns (uint amountOut) {
+    function consult(address token, uint256 amountIn) external view returns (uint256 amountOut) {
         if (token == token0) {
             amountOut = price0Average.mul(amountIn).decode144();
         } else {

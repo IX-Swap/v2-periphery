@@ -95,7 +95,8 @@ describe('IxsV2Router02', () => {
       'IxsV2Library: INVALID_PATH'
     )
     const path = [token0.address, token1.address]
-    expect(await router.getAmountsOut(bigNumberify(2), path)).to.deep.eq([bigNumberify(2), bigNumberify(1)])
+    const amountsOut = await router.getAmountsOut(bigNumberify(2), path)
+    expect(amountsOut.map((x: any) => x.toString())).to.deep.eq([bigNumberify(2), bigNumberify(1)].map((x: any) => x.toString()))
   })
 
   it('getAmountsIn', async () => {
@@ -117,7 +118,8 @@ describe('IxsV2Router02', () => {
       'IxsV2Library: INVALID_PATH'
     )
     const path = [token0.address, token1.address]
-    expect(await router.getAmountsIn(bigNumberify(1), path)).to.deep.eq([bigNumberify(2), bigNumberify(1)])
+    const amountsIn = await router.getAmountsIn(bigNumberify(1), path)
+    expect(amountsIn.map((x: any) => x.toString())).to.deep.eq([bigNumberify(2), bigNumberify(1)].map((x: any) => x.toString()))
   })
 })
 

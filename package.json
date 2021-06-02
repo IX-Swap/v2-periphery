@@ -43,7 +43,7 @@
     "pretest": "yarn compile",
     "test": "mocha",
     "prepublishOnly": "yarn test",
-    "build": "npm run compile"
+    "build": "yarn compile"
   },
   "license": "GPL-3.0-or-later"
 }

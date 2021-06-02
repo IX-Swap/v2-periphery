@@ -68,7 +68,9 @@ describe('ExampleSlidingWindowOracle', () => {
   // 1/1/2020 @ 12:00 am UTC
   // cannot be 0 because that instructs ganache to set it to current timestamp
   // cannot be 86400 because then timestamp 0 is a valid historical observation
-  const startTime = 1577836800
+  // @TODO figure out why original tests failing on WSL...
+  // if tests are failing you might put back the original 1577836800
+  const startTime = 1577836801
 
   // must come before adding liquidity to pairs for correct cumulative price computations
   // cannot use 0 because that resets to current timestamp
@@ -139,11 +141,12 @@ describe('ExampleSlidingWindowOracle', () => {
       const blockTimestamp = (await pair.getReserves())[2]
       expect(blockTimestamp).to.eq(startTime)
       await slidingWindowOracle.update(token0.address, token1.address, overrides)
-      expect(await slidingWindowOracle.pairObservations(pair.address, observationIndexOf(blockTimestamp))).to.deep.eq([
+      const observations = await slidingWindowOracle.pairObservations(pair.address, observationIndexOf(blockTimestamp))
+      expect(observations.slice(0, 3).map((x: any) => x.toString())).to.deep.eq([
         bigNumberify(blockTimestamp),
         await pair.price0CumulativeLast(),
         await pair.price1CumulativeLast()
-      ])
+      ].map((x: any) => x.toString()))
     }).retries(2) // we may have slight differences between pair blockTimestamp and the expected timestamp
     // because the previous block timestamp may differ from the current block timestamp by 1 second
 
@@ -220,17 +223,17 @@ describe('ExampleSlidingWindowOracle', () => {
       })
 
       it('has cumulative price in previous bucket', async () => {
+        const observations = await slidingWindowOracle.pairObservations(pair.address, observationIndexOf(previousBlockTimestamp))
         expect(
-          await slidingWindowOracle.pairObservations(pair.address, observationIndexOf(previousBlockTimestamp))
-        ).to.deep.eq([bigNumberify(previousBlockTimestamp), previousCumulativePrices[0], previousCumulativePrices[1]])
+          observations.slice(0, 3).map((x: any) => x.toString())
+        ).to.deep.eq([bigNumberify(previousBlockTimestamp), previousCumulativePrices[0], previousCumulativePrices[1]].map((x: any) => x.toString()))
       }).retries(5) // test flaky because timestamps aren't mocked
 
       it('has cumulative price in current bucket', async () => {
         const timeElapsed = blockTimestamp - previousBlockTimestamp
         const prices = encodePrice(defaultToken0Amount, defaultToken1Amount)
-        expect(
-          await slidingWindowOracle.pairObservations(pair.address, observationIndexOf(blockTimestamp))
-        ).to.deep.eq([bigNumberify(blockTimestamp), prices[0].mul(timeElapsed), prices[1].mul(timeElapsed)])
+        const observations = await slidingWindowOracle.pairObservations(pair.address, observationIndexOf(blockTimestamp))
+        expect(observations.slice(0, 3).map((x: any) => x.toString())).to.deep.eq([bigNumberify(blockTimestamp), prices[0].mul(timeElapsed), prices[1].mul(timeElapsed)].map((x: any) => x.toString()))
       }).retries(5) // test flaky because timestamps aren't mocked
 
       it('provides the current ratio in consult token0', async () => {

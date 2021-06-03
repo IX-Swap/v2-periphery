@@ -30,7 +30,10 @@
     "rimraf": "^3.0.0",
     "solc": "0.6.6",
     "ts-node": "^8.5.4",
-    "typescript": "^3.7.3"
+    "typescript": "^3.7.3",
+    "hardhat": "~2.3.0",
+    "@nomiclabs/hardhat-ethers": "~2.0.2",
+    "hardhat-gas-reporter": "~1.0.4"
   },
   "scripts": {
     "lint": "yarn prettier ./test/*.ts --check",
@@ -43,7 +46,8 @@
     "pretest": "yarn compile",
     "test": "mocha",
     "prepublishOnly": "yarn test",
-    "build": "yarn compile"
+    "build": "yarn compile",
+    "node": "yarn hardhat node"
   },
   "license": "GPL-3.0-or-later"
 }

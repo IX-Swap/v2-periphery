@@ -1,9 +1,0 @@
-contracts/Migrations.sol:1:1: ParserError: Source file requires different compiler version (current compiler is 0.6.6+commit.6c089d02.Emscripten.clang - note that nightly builds are considered to be strictly less than the released version
-pragma solidity =0.5.16;
-^----------------------^
-
-Error: Compilation failed
-    at processOutput (/home/alex/Projects/ixs-monorepo/common/temp/node_modules/@rush-temp/lib/node_modules/@ethereum-waffle/compiler/dist/cjs/compiler.js:43:15)
-    at compileAndSave (/home/alex/Projects/ixs-monorepo/common/temp/node_modules/@rush-temp/lib/node_modules/@ethereum-waffle/compiler/dist/cjs/compiler.js:24:11)
-    at async Object.compileProject (/home/alex/Projects/ixs-monorepo/common/temp/node_modules/@rush-temp/lib/node_modules/@ethereum-waffle/compiler/dist/cjs/compiler.js:14:5)
-error Command failed with exit code 1.

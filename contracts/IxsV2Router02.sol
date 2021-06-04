@@ -255,6 +255,7 @@ contract IxsV2Router02 is IIxsV2Router02 {
                 input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
             address to = i < path.length - 2 ? IxsV2Library.pairFor(factory, output, path[i + 2]) : _to;
             IIxsV2Pair(IxsV2Library.pairFor(factory, input, output)).swap(amount0Out, amount1Out, to, new bytes(0));
+            // @TODO Oracle update
         }
     }
 

@@ -1,5 +1,5 @@
 module.exports = {
-    FACTORY_ADDRESS:  '0x2404DC4ae974e9641fa1E79B439b50C111D39a94', // IXS FactoryV2 deployment address
+    FACTORY_ADDRESS:  '0x188CE6fD2Ed50dcAc737AB6802b53FC50e757b2f', // IXS FactoryV2 deployment address
     /**
      * DO NOT CHANGE UNLESS YOU KNOW WHAT YOU DO!
      */

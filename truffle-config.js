@@ -3,17 +3,17 @@ const path = require('path');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 function provider(network) {
-    if (network !== 'rinkeby' || network !== 'mainnet') {
+    if (network !== 'rinkeby' && network !== 'mainnet') {
         throw new Error('Allowed network are rinkeby and mainnet');
-    } else if (!fs.existsSync('../.pk')) {
+    } else if (!fs.existsSync(path.resolve(__dirname, '../.pk'))) {
         throw new Error('Private key file ".pk" does not exist in monorepo root');
     }
 
     return new HDWalletProvider({
-        privateKeys: fs.readFileSync('../.pk').toString().trim(),
+        privateKeys: [fs.readFileSync(path.resolve(__dirname, '../.pk')).toString().trim()],
         providerOrUrl: network === 'rinkeby'
-            ? "https://eth-rinkeby.alchemyapi.io/v2/8JFEW-2t5Mg5vLdM03X_bBDs037292vi"
-            : "https://eth-mainnet.alchemyapi.io/v2/xn1ulKnMejnDlx6fXs0ev3IeG_F4j_0X",
+            ? "wss://eth-rinkeby.ws.alchemyapi.io/v2/8JFEW-2t5Mg5vLdM03X_bBDs037292vi"
+            : "wss://eth-mainnet.ws.alchemyapi.io/v2/xn1ulKnMejnDlx6fXs0ev3IeG_F4j_0X",
     });    
 }
 
@@ -29,8 +29,20 @@ module.exports = {
             port: 8888,
             network_id: "*" // Match any network id
         },
-        stage: { provider: () => provider('rinkeby') },
-        prod: { provider: () => provider('mainnet') },
+        stage: {
+            provider: () => provider('rinkeby'),
+            network_id: 4,
+            networkCheckTimeout: 10000000,
+            timeoutBlocks: 200,  
+            skipDryRun: true,
+        },
+        prod: {
+            provider: () => provider('mainnet'),
+            network_id: 1,
+            networkCheckTimeout: 10000000,
+            confirmations: 2,
+            timeoutBlocks: 200,  
+        },
     },
 
     // Configure your compilers

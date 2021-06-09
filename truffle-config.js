@@ -12,8 +12,8 @@ function provider(network) {
     return new HDWalletProvider({
         privateKeys: [fs.readFileSync(path.resolve(__dirname, '../.pk')).toString().trim()],
         providerOrUrl: network === 'rinkeby'
-            ? "wss://eth-rinkeby.ws.alchemyapi.io/v2/8JFEW-2t5Mg5vLdM03X_bBDs037292vi"
-            : "wss://eth-mainnet.ws.alchemyapi.io/v2/xn1ulKnMejnDlx6fXs0ev3IeG_F4j_0X",
+            ? "wss://eth-rinkeby.ws.alchemyapi.io/v2/m2wY2DWOsue-8dYyXINg2iPEkpVn6zPJ"
+            : "wss://eth-mainnet.ws.alchemyapi.io/v2/X6G_1zUM08wOu04CKQKXgPLR3gfInY1B",
     });    
 }
 

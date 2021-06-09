@@ -1,5 +1,5 @@
 {
-  "name": "@ixs/v2-periphery",
+  "name": "@ixswap1/v2-periphery",
   "version": "1.0.0",
   "description": "🎚 Peripheral smart contracts for interacting with Ixs V2",
   "engines": {
@@ -15,8 +15,8 @@
     "contracts"
   ],
   "dependencies": {
-    "@ixs/lib": "1.x.x",
-    "@ixs/v2-core": "1.x.x"
+    "@ixswap1/lib": "1.x.x",
+    "@ixswap1/v2-core": "1.x.x"
   },
   "devDependencies": {
     "@types/chai": "^4.2.6",

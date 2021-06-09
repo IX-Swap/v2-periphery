@@ -1,7 +1,7 @@
 pragma solidity >=0.5.0;
 
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Pair.sol';
-import '@ixs/lib/contracts/libraries/FixedPoint.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
+import '@ixswap1/lib/contracts/libraries/FixedPoint.sol';
 
 // library with helper methods for oracles that are concerned with computing average prices
 library IxsV2OracleLibrary {

@@ -1,6 +1,6 @@
 pragma solidity =0.6.6;
 
-import '@ixs/lib/contracts/libraries/TransferHelper.sol';
+import '@ixswap1/lib/contracts/libraries/TransferHelper.sol';
 
 import './interfaces/IIxsV2Migrator.sol';
 import './interfaces/V1/IIxsV1Factory.sol';

@@ -1,9 +1,9 @@
 pragma solidity >=0.5.0;
 
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Pair.sol';
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Factory.sol';
-import '@ixs/lib/contracts/libraries/Babylonian.sol';
-import '@ixs/lib/contracts/libraries/FullMath.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Factory.sol';
+import '@ixswap1/lib/contracts/libraries/Babylonian.sol';
+import '@ixswap1/lib/contracts/libraries/FullMath.sol';
 
 import './SafeMath.sol';
 import './IxsV2Library.sol';

@@ -1,6 +1,6 @@
 pragma solidity >=0.5.0;
 
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Pair.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
 
 import './SafeMath.sol';
 

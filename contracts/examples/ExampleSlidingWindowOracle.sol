@@ -1,8 +1,8 @@
 pragma solidity =0.6.6;
 
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Factory.sol';
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Pair.sol';
-import '@ixs/lib/contracts/libraries/FixedPoint.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Factory.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
+import '@ixswap1/lib/contracts/libraries/FixedPoint.sol';
 
 import '../libraries/SafeMath.sol';
 import '../libraries/IxsV2Library.sol';

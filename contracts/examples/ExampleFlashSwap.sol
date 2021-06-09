@@ -1,6 +1,6 @@
 pragma solidity =0.6.6;
 
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Callee.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Callee.sol';
 
 import '../libraries/IxsV2Library.sol';
 import '../interfaces/V1/IIxsV1Factory.sol';

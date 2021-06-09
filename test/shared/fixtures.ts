@@ -4,8 +4,8 @@ import { deployContract } from 'ethereum-waffle'
 
 import { expandTo18Decimals } from './utilities'
 
-import IxsV2Factory from '@ixs/v2-core/build/IxsV2Factory.json'
-import IIxsV2Pair from '@ixs/v2-core/build/IIxsV2Pair.json'
+import IxsV2Factory from '@ixswap1/v2-core/build/IxsV2Factory.json'
+import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
 
 import ERC20 from '../../build/ERC20.json'
 import WETH9 from '../../build/WETH9.json'

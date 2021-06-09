@@ -1,8 +1,8 @@
 pragma solidity =0.6.6;
 
-import '@ixs/v2-core/contracts/interfaces/IIxsV2Pair.sol';
-import '@ixs/lib/contracts/libraries/Babylonian.sol';
-import '@ixs/lib/contracts/libraries/TransferHelper.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
+import '@ixswap1/lib/contracts/libraries/Babylonian.sol';
+import '@ixswap1/lib/contracts/libraries/TransferHelper.sol';
 
 import '../libraries/IxsV2LiquidityMathLibrary.sol';
 import '../interfaces/IERC20.sol';

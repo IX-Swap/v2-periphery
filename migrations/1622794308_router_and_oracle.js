@@ -4,12 +4,21 @@ const IIxsV2Factory = artifacts.require('IIxsV2Factory');
 const IIxsV2Pair = artifacts.require('IIxsV2Pair');
 const ERC20 = artifacts.require('ERC20');
 const WETH9 = artifacts.require('WETH9');
-const { FACTORY_ADDRESS, WETH_ADDRESS } = require('../constants');
+const constants = require('../constants');
 
 module.exports = async function(deployer, network, accounts) {
+  const { FACTORY_ADDRESS, WETH_ADDRESS, TEST } = constants[network];
   let wethAddress = WETH_ADDRESS;
 
-  if (network === 'dev') {
+  console.log('[CFG] FACTORY_ADDRESS', FACTORY_ADDRESS);
+  console.log('[CFG] WETH_ADDRESS', wethAddress ?? 'N/A');
+  console.log('[CFG] TEST', TEST ? 'YES' : 'NO');
+
+  if (!wethAddress) {
+    if (network != 'dev') {
+      console.warn("We're about to deploy a new WETH9 instance in a non-development environment! Please avoid this by setting the WETH_ADDRESS.");
+    }
+
     // trick to be compatible with waffle build
     WETH9._json.contractName = "WETH9";
     WETH9._properties.contract_name.get = () => "WETH9";
@@ -18,9 +27,6 @@ module.exports = async function(deployer, network, accounts) {
     const weth = await WETH9.deployed();
     wethAddress = weth.address;
   }
-
-  console.log('[CFG] FACTORY_ADDRESS', FACTORY_ADDRESS);
-  console.log('[CFG] WETH_ADDRESS', wethAddress);
 
   // trick to be compatible with waffle build
   DailySlidingWindowOracle01._json.contractName = "DailySlidingWindowOracle01";
@@ -44,7 +50,11 @@ module.exports = async function(deployer, network, accounts) {
   console.info('ROUTER V2 /02 > WETH =', await router.WETH());
 
   // Validate deploy....
-  if (network === 'dev' || network === 'stage') {
+  if (TEST) {
+    if (network == 'prod') {
+      console.warn("We're about to run tests on a production environment! Please try to avoid this...");
+    }
+
     console.info('');
     console.info('==== VALIDATING DEPLOY! ====');
 

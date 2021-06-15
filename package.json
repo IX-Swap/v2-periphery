@@ -46,9 +46,9 @@
     "test": "mocha",
     "prepublishOnly": "yarn test",
     "build": "yarn compile",
-    "deploy-dev": "if [ ! -z $WSL_DISTRO_NAME ]; then export WSL_HOST=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'); fi; yarn truffle migrate --network dev",
-    "deploy-stage": "yarn truffle migrate --network stage",
-    "deploy-prod": "yarn truffle migrate --network prod"
+    "deploy-dev": "if [ ! -z $WSL_DISTRO_NAME ]; then export WSL_HOST=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'); fi; yarn truffle migrate --compile-none --network dev",
+    "deploy-stage": "yarn truffle migrate --compile-none --network stage",
+    "deploy-prod": "yarn truffle migrate --compile-none --network prod"
   },
   "license": "GPL-3.0-or-later"
 }

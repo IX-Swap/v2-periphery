@@ -84,6 +84,7 @@ module.exports = async function(deployer, network, accounts) {
     const pair = await IIxsV2Pair.at(pairAddress);
 
     console.info('> pair->balanceOf [RECEIVER]');
+    console.info('');
     console.info('LP BENEFICIARY:', RECEIVER);
     console.info('LP TOKENS (wei):', (await pair.balanceOf(RECEIVER)).toString());
   }

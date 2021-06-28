@@ -245,16 +245,46 @@ contract IxsV2Router02 is IIxsV2Router02 {
     function _swap(
         uint256[] memory amounts,
         address[] memory path,
-        address _to
+        address _to,
+        address[] memory operator,
+        uint256[] memory deadline,
+        uint8[] memory v,
+        bytes32[] memory r,
+        bytes32[] memory s
     ) internal virtual {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, ) = IxsV2Library.sortTokens(input, output);
             uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOut)
+                : (amountOut, uint256(0));
             address to = i < path.length - 2 ? IxsV2Library.pairFor(factory, output, path[i + 2]) : _to;
-            IIxsV2Pair(IxsV2Library.pairFor(factory, input, output)).swap(amount0Out, amount1Out, to, new bytes(0));
+            (address operator0, address operator1) = input == token0
+                ? (operator[i], operator[i + 1])
+                : (operator[i + 1], operator[i]);
+            (uint256 deadline0, uint256 deadline1) = input == token0
+                ? (deadline[i], deadline[i + 1])
+                : (deadline[i + 1], deadline[i]);
+            (uint8 v0, uint8 v1) = input == token0 ? (v[i], v[i + 1]) : (v[i + 1], v[i]);
+            (bytes32 r0, bytes32 r1) = input == token0 ? (r[i], r[i + 1]) : (r[i + 1], r[i]);
+            (bytes32 s0, bytes32 s1) = input == token0 ? (s[i], s[i + 1]) : (s[i + 1], s[i]);
+            IIxsV2Pair(IxsV2Library.pairFor(factory, input, output)).swap(
+                amount0Out,
+                amount1Out,
+                to,
+                new bytes(0),
+                operator0,
+                deadline0,
+                v0,
+                r0,
+                s0,
+                operator1,
+                deadline1,
+                v1,
+                r1,
+                s1
+            );
             // @TODO Oracle update
         }
     }
@@ -264,7 +294,12 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        address[] calldata operator,
+        uint256[] calldata deadline1,
+        uint8[] calldata v,
+        bytes32[] calldata r,
+        bytes32[] calldata s
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
         amounts = IxsV2Library.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
@@ -274,7 +309,7 @@ contract IxsV2Router02 is IIxsV2Router02 {
             IxsV2Library.pairFor(factory, path[0], path[1]),
             amounts[0]
         );
-        _swap(amounts, path, to);
+        _swap(amounts, path, to, operator, deadline1, v, r, s);
     }
 
     function swapTokensForExactTokens(
@@ -282,7 +317,12 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 amountInMax,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        address[] calldata operator,
+        uint256[] calldata deadline1,
+        uint8[] calldata v,
+        bytes32[] calldata r,
+        bytes32[] calldata s
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
         amounts = IxsV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
@@ -292,21 +332,26 @@ contract IxsV2Router02 is IIxsV2Router02 {
             IxsV2Library.pairFor(factory, path[0], path[1]),
             amounts[0]
         );
-        _swap(amounts, path, to);
+        _swap(amounts, path, to, operator, deadline1, v, r, s);
     }
 
     function swapExactETHForTokens(
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        address[] calldata operator,
+        uint256[] calldata deadline1,
+        uint8[] calldata v,
+        bytes32[] calldata r,
+        bytes32[] calldata s
     ) external payable virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[0] == WETH, 'IxsV2Router: INVALID_PATH');
         amounts = IxsV2Library.getAmountsOut(factory, msg.value, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
         assert(IWETH(WETH).transfer(IxsV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
-        _swap(amounts, path, to);
+        _swap(amounts, path, to, operator, deadline1, v, r, s);
     }
 
     function swapTokensForExactETH(
@@ -314,7 +359,12 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 amountInMax,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        address[] calldata operator,
+        uint256[] calldata deadline1,
+        uint8[] calldata v,
+        bytes32[] calldata r,
+        bytes32[] calldata s
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[path.length - 1] == WETH, 'IxsV2Router: INVALID_PATH');
         amounts = IxsV2Library.getAmountsIn(factory, amountOut, path);
@@ -325,7 +375,7 @@ contract IxsV2Router02 is IIxsV2Router02 {
             IxsV2Library.pairFor(factory, path[0], path[1]),
             amounts[0]
         );
-        _swap(amounts, path, address(this));
+        _swap(amounts, path, address(this), operator, deadline1, v, r, s);
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
@@ -335,7 +385,12 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        address[] calldata operator,
+        uint256[] calldata deadline1,
+        uint8[] calldata v,
+        bytes32[] calldata r,
+        bytes32[] calldata s
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[path.length - 1] == WETH, 'IxsV2Router: INVALID_PATH');
         amounts = IxsV2Library.getAmountsOut(factory, amountIn, path);
@@ -346,7 +401,7 @@ contract IxsV2Router02 is IIxsV2Router02 {
             IxsV2Library.pairFor(factory, path[0], path[1]),
             amounts[0]
         );
-        _swap(amounts, path, address(this));
+        _swap(amounts, path, address(this), operator, deadline1, v, r, s);
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
@@ -355,14 +410,19 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 amountOut,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        address[] calldata operator,
+        uint256[] calldata deadline1,
+        uint8[] calldata v,
+        bytes32[] calldata r,
+        bytes32[] calldata s
     ) external payable virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[0] == WETH, 'IxsV2Router: INVALID_PATH');
         amounts = IxsV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= msg.value, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
         assert(IWETH(WETH).transfer(IxsV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
-        _swap(amounts, path, to);
+        _swap(amounts, path, to, operator, deadline1, v, r, s);
         // refund dust eth, if any
         if (msg.value > amounts[0]) TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
     }
@@ -379,13 +439,15 @@ contract IxsV2Router02 is IIxsV2Router02 {
             {
                 // scope to avoid stack too deep errors
                 (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) =
-                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                (uint256 reserveInput, uint256 reserveOutput) = input == token0
+                    ? (reserve0, reserve1)
+                    : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
                 amountOutput = IxsV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOutput)
+                : (amountOutput, uint256(0));
             address to = i < path.length - 2 ? IxsV2Library.pairFor(factory, output, path[i + 2]) : _to;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }

@@ -1,4 +1,7 @@
 pragma solidity >=0.6.2;
+pragma experimental ABIEncoderV2;
+
+import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
 
 interface IIxsV2Router01 {
     function factory() external pure returns (address);
@@ -89,7 +92,8 @@ interface IIxsV2Router01 {
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external returns (uint256[] memory amounts);
 
     function swapTokensForExactTokens(
@@ -97,14 +101,16 @@ interface IIxsV2Router01 {
         uint256 amountInMax,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external returns (uint256[] memory amounts);
 
     function swapExactETHForTokens(
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external payable returns (uint256[] memory amounts);
 
     function swapTokensForExactETH(
@@ -112,7 +118,8 @@ interface IIxsV2Router01 {
         uint256 amountInMax,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external returns (uint256[] memory amounts);
 
     function swapExactTokensForETH(
@@ -120,14 +127,16 @@ interface IIxsV2Router01 {
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external returns (uint256[] memory amounts);
 
     function swapETHForExactTokens(
         uint256 amountOut,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external payable returns (uint256[] memory amounts);
 
     function quote(

@@ -1,4 +1,5 @@
 pragma solidity >=0.6.2;
+pragma experimental ABIEncoderV2;
 
 import './IIxsV2Router01.sol';
 
@@ -30,14 +31,16 @@ interface IIxsV2Router02 is IIxsV2Router01 {
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external;
 
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external payable;
 
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
@@ -45,6 +48,7 @@ interface IIxsV2Router02 is IIxsV2Router01 {
         uint256 amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external;
 }

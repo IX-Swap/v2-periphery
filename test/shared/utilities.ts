@@ -1,12 +1,31 @@
 import { Contract } from 'ethers'
 import { Web3Provider } from 'ethers/providers'
-import { BigNumber, bigNumberify, keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack } from 'ethers/utils'
+import { BigNumber, bigNumberify, keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack, formatBytes32String } from 'ethers/utils'
+import { AddressZero, MaxUint256 } from 'ethers/constants'
 
 export const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3)
 
 const PERMIT_TYPEHASH = keccak256(
   toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
 )
+
+export interface SecAuthorization {
+  operator: string;
+  deadline: string | BigNumber | number;
+  v: string | BigNumber | number;
+  r: string;
+  s: string;
+}
+
+export const EMPTY_SWAP_SIG: SecAuthorization = {
+  operator: AddressZero,
+  deadline: MaxUint256,
+  v: 0,
+  r: formatBytes32String(''),
+  s: formatBytes32String(''),
+}
+
+export const EMPTY_SWAP_DIGEST = [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG];
 
 export function expandTo18Decimals(n: number): BigNumber {
   return bigNumberify(n).mul(bigNumberify(10).pow(18))

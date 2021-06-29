@@ -6,7 +6,7 @@ import { MaxUint256 } from 'ethers/constants'
 import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
 
 import { v2Fixture } from './shared/fixtures'
-import { expandTo18Decimals, getApprovalDigest, MINIMUM_LIQUIDITY } from './shared/utilities'
+import { expandTo18Decimals, getApprovalDigest, MINIMUM_LIQUIDITY, EMPTY_SWAP_DIGEST } from './shared/utilities'
 
 import DeflatingERC20 from '../build/DeflatingERC20.json'
 import { ecsign } from 'ethereumjs-util'
@@ -247,6 +247,7 @@ describe('fee-on-transfer tokens', () => {
         [DTT.address, WETH.address],
         wallet.address,
         MaxUint256,
+        EMPTY_SWAP_DIGEST,
         overrides
       )
     })
@@ -262,6 +263,7 @@ describe('fee-on-transfer tokens', () => {
         [WETH.address, DTT.address],
         wallet.address,
         MaxUint256,
+        EMPTY_SWAP_DIGEST,
         overrides
       )
     })
@@ -281,6 +283,7 @@ describe('fee-on-transfer tokens', () => {
       [WETH.address, DTT.address],
       wallet.address,
       MaxUint256,
+      EMPTY_SWAP_DIGEST,
       {
         ...overrides,
         value: swapAmount
@@ -305,6 +308,7 @@ describe('fee-on-transfer tokens', () => {
       [DTT.address, WETH.address],
       wallet.address,
       MaxUint256,
+      EMPTY_SWAP_DIGEST,
       overrides
     )
   })
@@ -375,6 +379,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
         [DTT.address, DTT2.address],
         wallet.address,
         MaxUint256,
+        EMPTY_SWAP_DIGEST,
         overrides
       )
     })

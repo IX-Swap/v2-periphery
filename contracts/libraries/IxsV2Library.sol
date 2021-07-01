@@ -28,7 +28,7 @@ library IxsV2Library {
                         hex'ff',
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex'8d97fc5b2569073acc5f489deed67efb94e34b1831d82c5ebc0484b9dcb8fd9b' // init code hash, ref: sdk/src/constants.ts#6
+                        hex'a14b14aebce2420c0b2a6bbba4e2b66806259f067ce0f7ff2a9632b12afb6916' // init code hash, ref: sdk/src/constants.ts#6
                     )
                 )
             )
@@ -41,7 +41,6 @@ library IxsV2Library {
         address tokenA,
         address tokenB
     ) internal view returns (uint256 reserveA, uint256 reserveB) {
-        (reserveA, reserveB) = (0, 0);
         (address token0, ) = sortTokens(tokenA, tokenB);
         (uint256 reserve0, uint256 reserve1, ) = IIxsV2Pair(pairFor(factory, tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);

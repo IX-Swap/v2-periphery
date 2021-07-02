@@ -265,7 +265,6 @@ contract IxsV2Router02 is IIxsV2Router02 {
                 new bytes(0),
                 authorizations
             );
-            // @TODO Oracle update
         }
     }
 

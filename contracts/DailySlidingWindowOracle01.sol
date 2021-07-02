@@ -25,7 +25,7 @@ contract DailySlidingWindowOracle01 {
 
     address public immutable factory;
     // the desired amount of time over which the moving average should be computed, e.g. 24 hours
-    uint256 public immutable windowSize = 24; // 1 day
+    uint256 public constant windowSize = 86400; // 1 day
     // the number of observations stored for each pair, i.e. how many price observations are stored for the window.
     // as granularity increases from 1, more frequent updates are needed, but moving averages become more precise.
     // averages are computed over intervals with sizes in the range:
@@ -33,14 +33,18 @@ contract DailySlidingWindowOracle01 {
     // e.g. if the window size is 24 hours, and the granularity is 24, the oracle will return the average price for
     //   the period:
     //   [now - [22 hours, 24 hours], now]
-    uint8 public immutable granularity = 6; // 6 oservations per window
+    uint8 public constant granularity = 24; // 24 oservations per window
     // this is redundant with granularity and windowSize, but stored for gas savings & informational purposes.
-    uint256 public immutable periodSize = 4; // update every 4 hours
+    uint256 public immutable periodSize;
 
     // mapping from pair address to a list of price observations of that pair
     mapping(address => Observation[]) public pairObservations;
 
     constructor(address factory_) public {
+        require(
+            (periodSize = windowSize / granularity) * granularity == windowSize,
+            'SlidingWindowOracle: WINDOW_NOT_EVENLY_DIVISIBLE'
+        ); // assertion to avoid human factor issues
         factory = factory_;
     }
 

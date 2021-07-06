@@ -31,19 +31,19 @@ interface V2Fixture {
 
 export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<V2Fixture> {
   // deploy tokens
-  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-  const WETH = await deployContract(wallet, WETH9)
-  const WETHPartner = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
+  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
+  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
+  const WETH = await deployContract(wallet, WETH9, [], overrides)
+  const WETHPartner = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
 
   // deploy V2
-  const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address])
+  const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address], overrides)
 
   // deploy routers
   const router02 = await deployContract(wallet, IxsV2Router02, [factoryV2.address, WETH.address], overrides)
 
   // event emitter for testing
-  const routerEventEmitter = await deployContract(wallet, RouterEventEmitter, [])
+  const routerEventEmitter = await deployContract(wallet, RouterEventEmitter, [], overrides)
 
   // initialize V2
   await factoryV2.createPair(tokenA.address, tokenB.address)

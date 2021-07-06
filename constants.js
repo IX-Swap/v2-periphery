@@ -1,6 +1,6 @@
-module.exports = {//0x188CE6fD2Ed50dcAc737AB6802b53FC50e757b2f
+module.exports = {
     dev: {
-        FACTORY_ADDRESS:  '', // IXS FactoryV2 deployment address
+        FACTORY_ADDRESS:  '0x125Ac1594F39b7AEe9186c97B4Eb111B0A27a6aC', // IXS FactoryV2 deployment address
         TEST: true, // test LP creation
         WETH_ADDRESS: null, // this will be deployed automatically when null
     },

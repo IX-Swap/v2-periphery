@@ -31,7 +31,7 @@ contract DailySlidingWindowOracle01 {
     // e.g. if the window size is 24 hours, and the granularity is 24, the oracle will return the average price for
     //   the period:
     //   [now - [22 hours, 24 hours], now]
-    uint8 public constant granularity = 24; // 24 oservations per window
+    uint8 public constant granularity = 24; // 24 oservations per window, every hour basically
     // this is redundant with granularity and windowSize, but stored for gas savings & informational purposes.
     uint256 public immutable periodSize;
 
@@ -96,6 +96,14 @@ contract DailySlidingWindowOracle01 {
         FixedPoint.uq112x112 memory priceAverage =
             FixedPoint.uq112x112(uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed));
         amountOut = priceAverage.mul(amountIn).decode144();
+    }
+
+    function canConsult(address tokenA, address tokenB) external view returns (bool) {
+        address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
+        Observation storage firstObservation = getFirstObservationInWindow(pair);
+
+        uint256 timeElapsed = block.timestamp - firstObservation.timestamp;
+        return timeElapsed <= windowSize;
     }
 
     // returns the amount out corresponding to the amount in for a given token using the moving average over the time

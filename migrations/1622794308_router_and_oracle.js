@@ -35,11 +35,11 @@ module.exports = async function(deployer, network, accounts) {
   await deployer.deploy(DailySlidingWindowOracle01, FACTORY_ADDRESS);
   const oracle = await DailySlidingWindowOracle01.deployed();
   const factory = await IIxsV2Factory.at(FACTORY_ADDRESS);
-  await factory.setDswOracle(oracle.address);
+  await factory.setOracle(oracle.address, '0x0000000000000000000000000000000000000000000000000000000000000000');
 
   console.info('DSW ORACLE =', oracle.address);
   console.info('DSW ORACLE > factory =', await oracle.factory());
-  console.info('FACTORY V2 > dswOracle =', await factory.dswOracle());
+  console.info('FACTORY V2 > oracle =', await factory.oracle());
 
   // trick to be compatible with waffle build
   IxsV2Router02._json.contractName = "IxsV2Router02";

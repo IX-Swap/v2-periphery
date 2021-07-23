@@ -18,7 +18,8 @@ library IxsV2LiquidityMathLibrary {
         uint256 truePriceTokenA,
         uint256 truePriceTokenB,
         uint256 reserveA,
-        uint256 reserveB
+        uint256 reserveB,
+        bool isSecurityPool
     ) internal pure returns (bool aToB, uint256 amountIn) {
         aToB = FullMath.mulDiv(reserveA, truePriceTokenB, reserveB) < truePriceTokenA;
 
@@ -29,10 +30,10 @@ library IxsV2LiquidityMathLibrary {
                 FullMath.mulDiv(
                     invariant.mul(1000),
                     aToB ? truePriceTokenA : truePriceTokenB,
-                    (aToB ? truePriceTokenB : truePriceTokenA).mul(997)
+                    (aToB ? truePriceTokenB : truePriceTokenA).mul(isSecurityPool ? 990 : 997)
                 )
             );
-        uint256 rightSide = (aToB ? reserveA.mul(1000) : reserveB.mul(1000)) / 997;
+        uint256 rightSide = (aToB ? reserveA.mul(1000) : reserveB.mul(1000)) / (isSecurityPool ? 990 : 997);
 
         if (leftSide < rightSide) return (false, 0);
 
@@ -46,7 +47,8 @@ library IxsV2LiquidityMathLibrary {
         address tokenA,
         address tokenB,
         uint256 truePriceTokenA,
-        uint256 truePriceTokenB
+        uint256 truePriceTokenB,
+        bool isSecurityPool
     ) internal view returns (uint256 reserveA, uint256 reserveB) {
         // first get reserves before the swap
         (reserveA, reserveB) = IxsV2Library.getReserves(factory, tokenA, tokenB);
@@ -55,7 +57,7 @@ library IxsV2LiquidityMathLibrary {
 
         // then compute how much to swap to arb to the true price
         (bool aToB, uint256 amountIn) =
-            computeProfitMaximizingTrade(truePriceTokenA, truePriceTokenB, reserveA, reserveB);
+            computeProfitMaximizingTrade(truePriceTokenA, truePriceTokenB, reserveA, reserveB, isSecurityPool);
 
         if (amountIn == 0) {
             return (reserveA, reserveB);
@@ -63,11 +65,11 @@ library IxsV2LiquidityMathLibrary {
 
         // now affect the trade to the reserves
         if (aToB) {
-            uint256 amountOut = IxsV2Library.getAmountOut(amountIn, reserveA, reserveB);
+            uint256 amountOut = IxsV2Library.getAmountOut(amountIn, reserveA, reserveB, isSecurityPool);
             reserveA += amountIn;
             reserveB -= amountOut;
         } else {
-            uint256 amountOut = IxsV2Library.getAmountOut(amountIn, reserveB, reserveA);
+            uint256 amountOut = IxsV2Library.getAmountOut(amountIn, reserveB, reserveA, isSecurityPool);
             reserveB += amountIn;
             reserveA -= amountOut;
         }
@@ -121,7 +123,8 @@ library IxsV2LiquidityMathLibrary {
         address tokenB,
         uint256 truePriceTokenA,
         uint256 truePriceTokenB,
-        uint256 liquidityAmount
+        uint256 liquidityAmount,
+        bool isSecurityPool
     ) internal view returns (uint256 tokenAAmount, uint256 tokenBAmount) {
         bool feeOn = IIxsV2Factory(factory).feeTo() != address(0);
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, tokenA, tokenB));
@@ -132,7 +135,7 @@ library IxsV2LiquidityMathLibrary {
         require(totalSupply >= liquidityAmount && liquidityAmount > 0, 'ComputeLiquidityValue: LIQUIDITY_AMOUNT');
 
         (uint256 reservesA, uint256 reservesB) =
-            getReservesAfterArbitrage(factory, tokenA, tokenB, truePriceTokenA, truePriceTokenB);
+            getReservesAfterArbitrage(factory, tokenA, tokenB, truePriceTokenA, truePriceTokenB, isSecurityPool);
 
         return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast);
     }

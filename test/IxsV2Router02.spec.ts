@@ -50,28 +50,42 @@ describe('IxsV2Router02', () => {
     )
   })
 
+  it('getAmountOut:fees', async () => {
+    const outFeeCrypto = expandTo18Decimals(2).mul(997).mul(expandTo18Decimals(100)).div(expandTo18Decimals(50).mul(1000).add(expandTo18Decimals(2).mul(997)))
+    const outFeeSec = expandTo18Decimals(2).mul(990).mul(expandTo18Decimals(100)).div(expandTo18Decimals(50).mul(1000).add(expandTo18Decimals(2).mul(990)))
+    expect(await router.getAmountOut(expandTo18Decimals(2), expandTo18Decimals(50), expandTo18Decimals(100), false)).to.eq(outFeeCrypto)
+    expect(await router.getAmountOut(expandTo18Decimals(2), expandTo18Decimals(50), expandTo18Decimals(100), true)).to.eq(outFeeSec)
+  })
+
   it('getAmountOut', async () => {
-    expect(await router.getAmountOut(bigNumberify(2), bigNumberify(100), bigNumberify(100))).to.eq(bigNumberify(1))
-    await expect(router.getAmountOut(bigNumberify(0), bigNumberify(100), bigNumberify(100))).to.be.revertedWith(
+    expect(await router.getAmountOut(bigNumberify(2), bigNumberify(100), bigNumberify(100), false)).to.eq(bigNumberify(1))
+    await expect(router.getAmountOut(bigNumberify(0), bigNumberify(100), bigNumberify(100), false)).to.be.revertedWith(
       'IxsV2Library: INSUFFICIENT_INPUT_AMOUNT'
     )
-    await expect(router.getAmountOut(bigNumberify(2), bigNumberify(0), bigNumberify(100))).to.be.revertedWith(
+    await expect(router.getAmountOut(bigNumberify(2), bigNumberify(0), bigNumberify(100), false)).to.be.revertedWith(
       'IxsV2Library: INSUFFICIENT_LIQUIDITY'
     )
-    await expect(router.getAmountOut(bigNumberify(2), bigNumberify(100), bigNumberify(0))).to.be.revertedWith(
+    await expect(router.getAmountOut(bigNumberify(2), bigNumberify(100), bigNumberify(0), false)).to.be.revertedWith(
       'IxsV2Library: INSUFFICIENT_LIQUIDITY'
     )
   })
+  
+  it('getAmountIn:fees', async () => {
+    const inFeeCrypto = expandTo18Decimals(50).mul(expandTo18Decimals(1)).mul(1000).div(expandTo18Decimals(100).sub(expandTo18Decimals(1)).mul(997)).add(1)
+    const inFeeSec = expandTo18Decimals(50).mul(expandTo18Decimals(1)).mul(1000).div(expandTo18Decimals(100).sub(expandTo18Decimals(1)).mul(990)).add(1)
+    expect(await router.getAmountIn(expandTo18Decimals(1), expandTo18Decimals(50), expandTo18Decimals(100), false)).to.eq(inFeeCrypto)
+    expect(await router.getAmountIn(expandTo18Decimals(1), expandTo18Decimals(50), expandTo18Decimals(100), true)).to.eq(inFeeSec)
+  })
 
   it('getAmountIn', async () => {
-    expect(await router.getAmountIn(bigNumberify(1), bigNumberify(100), bigNumberify(100))).to.eq(bigNumberify(2))
-    await expect(router.getAmountIn(bigNumberify(0), bigNumberify(100), bigNumberify(100))).to.be.revertedWith(
+    expect(await router.getAmountIn(bigNumberify(1), bigNumberify(100), bigNumberify(100), false)).to.eq(bigNumberify(2))
+    await expect(router.getAmountIn(bigNumberify(0), bigNumberify(100), bigNumberify(100), false)).to.be.revertedWith(
       'IxsV2Library: INSUFFICIENT_OUTPUT_AMOUNT'
     )
-    await expect(router.getAmountIn(bigNumberify(1), bigNumberify(0), bigNumberify(100))).to.be.revertedWith(
+    await expect(router.getAmountIn(bigNumberify(1), bigNumberify(0), bigNumberify(100), false)).to.be.revertedWith(
       'IxsV2Library: INSUFFICIENT_LIQUIDITY'
     )
-    await expect(router.getAmountIn(bigNumberify(1), bigNumberify(100), bigNumberify(0))).to.be.revertedWith(
+    await expect(router.getAmountIn(bigNumberify(1), bigNumberify(100), bigNumberify(0), false)).to.be.revertedWith(
       'IxsV2Library: INSUFFICIENT_LIQUIDITY'
     )
   })
@@ -91,11 +105,11 @@ describe('IxsV2Router02', () => {
       overrides
     )
 
-    await expect(router.getAmountsOut(bigNumberify(2), [token0.address])).to.be.revertedWith(
+    await expect(router.getAmountsOut(bigNumberify(2), [token0.address], [false])).to.be.revertedWith(
       'IxsV2Library: INVALID_PATH'
     )
     const path = [token0.address, token1.address]
-    const amountsOut = await router.getAmountsOut(bigNumberify(2), path)
+    const amountsOut = await router.getAmountsOut(bigNumberify(2), path, [false, false])
     expect(amountsOut.map((x: any) => x.toString())).to.deep.eq([bigNumberify(2), bigNumberify(1)].map((x: any) => x.toString()))
   })
 
@@ -114,11 +128,11 @@ describe('IxsV2Router02', () => {
       overrides
     )
 
-    await expect(router.getAmountsIn(bigNumberify(1), [token0.address])).to.be.revertedWith(
+    await expect(router.getAmountsIn(bigNumberify(1), [token0.address], [false])).to.be.revertedWith(
       'IxsV2Library: INVALID_PATH'
     )
     const path = [token0.address, token1.address]
-    const amountsIn = await router.getAmountsIn(bigNumberify(1), path)
+    const amountsIn = await router.getAmountsIn(bigNumberify(1), path, [false, false])
     expect(amountsIn.map((x: any) => x.toString())).to.deep.eq([bigNumberify(2), bigNumberify(1)].map((x: any) => x.toString()))
   })
 })

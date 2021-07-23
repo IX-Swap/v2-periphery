@@ -10,7 +10,7 @@ module.exports = {
         /**
          * DO NOT CHANGE UNLESS YOU KNOW WHAT YOU DO!
          */
-        WETH_ADDRESS: '0xc778417E063141139Fce010982780140Aa0cD5Ab', // WETH deployment address (rinkeby)
+        WETH_ADDRESS: '0xc778417E063141139Fce010982780140Aa0cD5Ab', // WETH deployment address (kovan)
         // for WETH9 known implementations consult: sdk-core/src/entities/weth9.ts
         // should be the same as: subgraph/src/mappings/pricing.ts (WETH_ADDRESS)
     },

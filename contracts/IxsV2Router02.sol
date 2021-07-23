@@ -276,12 +276,26 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 deadline,
         IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
-        amounts = IxsV2Library.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
+        {
+            // avoid stack to deep error
+            address _path0 = path[0];
+            address _path1 = path[1];
+            address[] memory _path = path;
+            uint256 _amountIn = amountIn;
+            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            amounts = IxsV2Library.getAmountsOut(
+                factory, 
+                _amountIn,
+                _path,
+                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+            );
+            require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        }
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
-            IxsV2Library.pairFor(factory, path[0], path[1]),
+            address(pair),
             amounts[0]
         );
         _swap(amounts, path, to, authorizations);
@@ -295,12 +309,26 @@ contract IxsV2Router02 is IIxsV2Router02 {
         uint256 deadline,
         IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
-        amounts = IxsV2Library.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
+        IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
+        {
+            // avoid stack to deep error
+            address _path0 = path[0];
+            address _path1 = path[1];
+            address[] memory _path = path;
+            uint256 _amountOut = amountOut;
+            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            amounts = IxsV2Library.getAmountsIn(
+                factory, 
+                _amountOut,
+                _path,
+                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+            );
+            require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
+        }
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
-            IxsV2Library.pairFor(factory, path[0], path[1]),
+            address(pair),
             amounts[0]
         );
         _swap(amounts, path, to, authorizations);
@@ -314,10 +342,23 @@ contract IxsV2Router02 is IIxsV2Router02 {
         IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external payable virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[0] == WETH, 'IxsV2Router: INVALID_PATH');
-        amounts = IxsV2Library.getAmountsOut(factory, msg.value, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
+        {
+            // avoid stack to deep error
+            address _path0 = path[0];
+            address _path1 = path[1];
+            address[] memory _path = path;
+            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            amounts = IxsV2Library.getAmountsOut(
+                factory,
+                msg.value,
+                _path,
+                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+            );
+            require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        }
         IWETH(WETH).deposit{value: amounts[0]}();
-        assert(IWETH(WETH).transfer(IxsV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
+        assert(IWETH(WETH).transfer(address(pair), amounts[0]));
         _swap(amounts, path, to, authorizations);
     }
 
@@ -330,12 +371,26 @@ contract IxsV2Router02 is IIxsV2Router02 {
         IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[path.length - 1] == WETH, 'IxsV2Router: INVALID_PATH');
-        amounts = IxsV2Library.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
+        IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
+        {
+            // avoid stack to deep error
+            address _path0 = path[0];
+            address _path1 = path[1];
+            address[] memory _path = path;
+            uint256 _amountOut = amountOut;
+            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            amounts = IxsV2Library.getAmountsIn(
+                factory, 
+                _amountOut,
+                _path,
+                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+            );
+            require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
+        }
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
-            IxsV2Library.pairFor(factory, path[0], path[1]),
+            address(pair),
             amounts[0]
         );
         _swap(amounts, path, address(this), authorizations);
@@ -352,12 +407,26 @@ contract IxsV2Router02 is IIxsV2Router02 {
         IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[path.length - 1] == WETH, 'IxsV2Router: INVALID_PATH');
-        amounts = IxsV2Library.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
+        {
+            // avoid stack to deep error
+            address _path0 = path[0];
+            address _path1 = path[1];
+            address[] memory _path = path;
+            uint256 _amountIn = amountIn;
+            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            amounts = IxsV2Library.getAmountsOut(
+                factory, 
+                _amountIn,
+                _path,
+                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+            );
+            require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        }        
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
-            IxsV2Library.pairFor(factory, path[0], path[1]),
+            address(pair),
             amounts[0]
         );
         _swap(amounts, path, address(this), authorizations);
@@ -373,10 +442,24 @@ contract IxsV2Router02 is IIxsV2Router02 {
         IIxsV2Pair.SecAuthorization[] calldata authorizations
     ) external payable virtual override ensure(deadline) returns (uint256[] memory amounts) {
         require(path[0] == WETH, 'IxsV2Router: INVALID_PATH');
-        amounts = IxsV2Library.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= msg.value, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
+        IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
+        {
+            // avoid stack to deep error
+            address _path0 = path[0];
+            address _path1 = path[1];
+            address[] memory _path = path;
+            uint256 _amountOut = amountOut;
+            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            amounts = IxsV2Library.getAmountsIn(
+                factory, 
+                _amountOut,
+                _path,
+                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+            );
+            require(amounts[0] <= msg.value, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
+        }
         IWETH(WETH).deposit{value: amounts[0]}();
-        assert(IWETH(WETH).transfer(IxsV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
+        assert(IWETH(WETH).transfer(address(pair), amounts[0]));
         _swap(amounts, path, to, authorizations);
         // refund dust eth, if any
         if (msg.value > amounts[0]) TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
@@ -403,7 +486,7 @@ contract IxsV2Router02 is IIxsV2Router02 {
                     ? (reserve0, reserve1)
                     : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = IxsV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
+                amountOutput = IxsV2Library.getAmountOut(amountInput, reserveInput, reserveOutput, pair.isSecurityPool());
             }
 
             uint256 amount0Out;
@@ -492,36 +575,44 @@ contract IxsV2Router02 is IIxsV2Router02 {
     function getAmountOut(
         uint256 amountIn,
         uint256 reserveIn,
-        uint256 reserveOut
+        uint256 reserveOut,
+        bool isSecurityPool
     ) public pure virtual override returns (uint256 amountOut) {
-        return IxsV2Library.getAmountOut(amountIn, reserveIn, reserveOut);
+        return IxsV2Library.getAmountOut(amountIn, reserveIn, reserveOut, isSecurityPool);
     }
 
     function getAmountIn(
         uint256 amountOut,
         uint256 reserveIn,
-        uint256 reserveOut
+        uint256 reserveOut,
+        bool isSecurityPool
     ) public pure virtual override returns (uint256 amountIn) {
-        return IxsV2Library.getAmountIn(amountOut, reserveIn, reserveOut);
+        return IxsV2Library.getAmountIn(amountOut, reserveIn, reserveOut, isSecurityPool);
     }
 
-    function getAmountsOut(uint256 amountIn, address[] memory path)
+    function getAmountsOut(uint256 amountIn, address[] memory path, bool[] memory secPath)
         public
         view
         virtual
         override
         returns (uint256[] memory amounts)
     {
-        return IxsV2Library.getAmountsOut(factory, amountIn, path);
+        return IxsV2Library.getAmountsOut(factory, amountIn, path, secPath);
     }
 
-    function getAmountsIn(uint256 amountOut, address[] memory path)
+    function getAmountsIn(uint256 amountOut, address[] memory path, bool[] memory secPath)
         public
         view
         virtual
         override
         returns (uint256[] memory amounts)
     {
-        return IxsV2Library.getAmountsIn(factory, amountOut, path);
+        return IxsV2Library.getAmountsIn(factory, amountOut, path, secPath);
+    }
+    
+    function _bool2ArrayToDynamic(bool[2] memory arr) internal pure returns (bool[] memory dynarr) {
+        dynarr = new bool[](2);
+        dynarr[0] = arr[0];
+        dynarr[1] = arr[1];
     }
 }

@@ -3,17 +3,17 @@ const path = require('path');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 function provider(network) {
-    if (network !== 'rinkeby' && network !== 'mainnet') {
-        throw new Error('Allowed network are rinkeby and mainnet');
+    if (network !== 'kovan' && network !== 'mainnet') {
+        throw new Error('Allowed network are kovan and mainnet');
     } else if (!fs.existsSync(path.resolve(__dirname, '../.pk'))) {
         throw new Error('Private key file ".pk" does not exist in monorepo root');
     }
 
     return new HDWalletProvider({
         privateKeys: [fs.readFileSync(path.resolve(__dirname, '../.pk')).toString().trim()],
-        providerOrUrl: network === 'rinkeby'
-            ? "wss://eth-rinkeby.ws.alchemyapi.io/v2/m2wY2DWOsue-8dYyXINg2iPEkpVn6zPJ"
-            : "wss://eth-mainnet.ws.alchemyapi.io/v2/X6G_1zUM08wOu04CKQKXgPLR3gfInY1B",
+        providerOrUrl: network === 'kovan'
+            ? "wss://eth-kovan.alchemyapi.io/v2/mnqy9FOppO0stI-HxmI2xFkG78-nEFtx"
+            : "wss://eth-mainnet.alchemyapi.io/v2/xn1ulKnMejnDlx6fXs0ev3IeG_F4j_0X",
     });    
 }
 
@@ -30,8 +30,8 @@ module.exports = {
             network_id: "*" // Match any network id
         },
         stage: {
-            provider: () => provider('rinkeby'),
-            network_id: 4,
+            provider: () => provider('kovan'),
+            network_id: 42,
             networkCheckTimeout: 10000000,
             timeoutBlocks: 200,  
             skipDryRun: true,

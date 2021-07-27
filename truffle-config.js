@@ -33,8 +33,9 @@ module.exports = {
             provider: () => provider('kovan'),
             network_id: 42,
             networkCheckTimeout: 10000000,
-            timeoutBlocks: 200,  
+            timeoutBlocks: 200,
             skipDryRun: true,
+            gasPrice: 7, // https://dashboards.anyblock.tools/ethereum/ethereum/kovan/gas-metrics/
         },
         prod: {
             provider: () => provider('mainnet'),

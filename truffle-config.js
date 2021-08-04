@@ -35,7 +35,7 @@ module.exports = {
             networkCheckTimeout: 10000000,
             timeoutBlocks: 200,
             skipDryRun: true,
-            gasPrice: 7, // https://dashboards.anyblock.tools/ethereum/ethereum/kovan/gas-metrics/
+            gasPrice: 1000000000, // 1 gwei
         },
         prod: {
             provider: () => provider('mainnet'),

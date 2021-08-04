@@ -35,7 +35,16 @@ module.exports = async function(deployer, network, accounts) {
   await deployer.deploy(DailySlidingWindowOracle01, FACTORY_ADDRESS);
   const oracle = await DailySlidingWindowOracle01.deployed();
   const factory = await IIxsV2Factory.at(FACTORY_ADDRESS);
-  await factory.setOracle(oracle.address, '0x0000000000000000000000000000000000000000000000000000000000000000');
+
+  try {
+    await factory.setOracle(oracle.address, '0x0000000000000000000000000000000000000000000000000000000000000000');
+  } catch (e) {
+    console.warn(
+      'FACTORY default oracle allowed to be set once, when missing! ' +
+      'Please make sure you did NOT have any failed periphery deploy, otherwise- you need a fresh deploy of core contracts...'
+    );
+    throw e;
+  }
 
   console.info('DSW ORACLE =', oracle.address);
   console.info('DSW ORACLE > factory =', await oracle.factory());

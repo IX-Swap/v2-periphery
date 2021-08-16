@@ -12,7 +12,7 @@ function provider(network) {
     return new HDWalletProvider({
         privateKeys: [fs.readFileSync(path.resolve(__dirname, '../.pk')).toString().trim()],
         providerOrUrl: network === 'kovan'
-            ? "wss://eth-kovan.alchemyapi.io/v2/mnqy9FOppO0stI-HxmI2xFkG78-nEFtx"
+            ? "wss://eth-kovan.alchemyapi.io/v2/Ch_PanN-XfHf2oq9v5a-FPg5HbY65QZg"
             : "wss://eth-mainnet.alchemyapi.io/v2/xn1ulKnMejnDlx6fXs0ev3IeG_F4j_0X",
     });    
 }

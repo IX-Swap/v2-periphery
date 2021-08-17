@@ -1,6 +1,6 @@
 {
   "name": "@ixswap1/v2-periphery",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "🎚 Peripheral smart contracts for interacting with Ixs V2",
   "engines": {
     "node": ">=10"

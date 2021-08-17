@@ -5,7 +5,7 @@ module.exports = {
         WETH_ADDRESS: null, // this will be deployed automatically when null
     },
     stage: {
-        FACTORY_ADDRESS:  '0xFD5978fc22F976bADDC80778Dc58a8e0f0F6dbb5', // IXS FactoryV2 deployment address
+        FACTORY_ADDRESS:  '0x0b8bF935F597d3D7f43180eF40eb370d9EFf91A1', // IXS FactoryV2 deployment address
         TEST: true, // test LP creation
         /**
          * DO NOT CHANGE UNLESS YOU KNOW WHAT YOU DO!

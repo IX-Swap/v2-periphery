@@ -1,12 +1,12 @@
 import chai, { expect } from 'chai'
 import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
 import { Contract } from 'ethers'
-import { BigNumber, bigNumberify } from 'ethers/utils'
+import { BigNumber, bigNumberify, hexlify } from 'ethers/utils'
 import { MaxUint256 } from 'ethers/constants'
 import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
 
 import { v2Fixture } from './shared/fixtures'
-import { expandTo18Decimals, getApprovalDigest, MINIMUM_LIQUIDITY, EMPTY_SWAP_DIGEST } from './shared/utilities'
+import { expandTo18Decimals, getApprovalDigest, getSwapDigest, SecAuthorization, MINIMUM_LIQUIDITY, EMPTY_SWAP_DIGEST, EMPTY_SWAP_SIG } from './shared/utilities'
 
 import DeflatingERC20 from '../build/DeflatingERC20.json'
 import { ecsign } from 'ethereumjs-util'
@@ -16,6 +16,8 @@ chai.use(solidity)
 const overrides = {
   gasLimit: 9999999
 }
+
+const ZERO_AMOUNT = expandTo18Decimals(0)
 
 describe('IxsV2Router02', () => {
   const provider = new MockProvider({
@@ -29,7 +31,7 @@ describe('IxsV2Router02', () => {
   let token0: Contract
   let token1: Contract
   let router: Contract
-  beforeEach(async function() {
+  beforeEach(async function () {
     const fixture = await loadFixture(v2Fixture)
     token0 = fixture.token0
     token1 = fixture.token1
@@ -69,7 +71,7 @@ describe('IxsV2Router02', () => {
       'IxsV2Library: INSUFFICIENT_LIQUIDITY'
     )
   })
-  
+
   it('getAmountIn:fees', async () => {
     const inFeeCrypto = expandTo18Decimals(50).mul(expandTo18Decimals(1)).mul(1000).div(expandTo18Decimals(100).sub(expandTo18Decimals(1)).mul(997)).add(1)
     const inFeeSec = expandTo18Decimals(50).mul(expandTo18Decimals(1)).mul(1000).div(expandTo18Decimals(100).sub(expandTo18Decimals(1)).mul(990)).add(1)
@@ -150,7 +152,7 @@ describe('fee-on-transfer tokens', () => {
   let WETH: Contract
   let router: Contract
   let pair: Contract
-  beforeEach(async function() {
+  beforeEach(async function () {
     const fixture = await loadFixture(v2Fixture)
 
     WETH = fixture.WETH
@@ -164,7 +166,7 @@ describe('fee-on-transfer tokens', () => {
     pair = new Contract(pairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
   })
 
-  afterEach(async function() {
+  afterEach(async function () {
     expect(await provider.getBalance(router.address)).to.eq(0)
   })
 
@@ -340,10 +342,21 @@ describe('fee-on-transfer tokens: reloaded', () => {
   let DTT: Contract
   let DTT2: Contract
   let router: Contract
-  beforeEach(async function() {
+  let wSecFactory: Contract
+  let wsecToken: Contract
+  let secPair: Contract
+  let token0sec: Contract
+  let token1sec: Contract
+
+  beforeEach(async () => {
     const fixture = await loadFixture(v2Fixture)
 
     router = fixture.router02
+    wSecFactory = fixture.wSecFactory
+    wsecToken = fixture.wsecToken
+    token0sec = fixture.token0sec
+    token1sec = fixture.token1sec
+    secPair = fixture.secPair
 
     DTT = await deployContract(wallet, DeflatingERC20, [expandTo18Decimals(10000)])
     DTT2 = await deployContract(wallet, DeflatingERC20, [expandTo18Decimals(10000)])
@@ -353,7 +366,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
     const pairAddress = await fixture.factoryV2.getPair(DTT.address, DTT2.address)
   })
 
-  afterEach(async function() {
+  afterEach(async function () {
     expect(await provider.getBalance(router.address)).to.eq(0)
   })
 
@@ -394,6 +407,83 @@ describe('fee-on-transfer tokens: reloaded', () => {
         wallet.address,
         MaxUint256,
         EMPTY_SWAP_DIGEST,
+        overrides
+      )
+    })
+  })
+
+  describe('swapExactTokensForTokensSupportingFeeOnTransferTokens:sec', () => {
+    const SEC0Amount = expandTo18Decimals(5)
+      .mul(100)
+      .div(99)
+    const SEC1Amount = expandTo18Decimals(5)
+    const amountIn = expandTo18Decimals(1)
+
+    let ERC: Contract
+    let SEC: Contract
+    let deadline: BigNumber
+    let authorization: SecAuthorization
+    beforeEach(async () => {
+      ERC = token0sec.address == wsecToken.address ? token1sec : token0sec
+      SEC = token0sec.address == wsecToken.address ? token0sec : token1sec
+
+      await token0sec.approve(router.address, MaxUint256)
+      await token1sec.approve(router.address, MaxUint256)
+      await router.addLiquidity(
+        token0sec.address,
+        token1sec.address,
+        SEC0Amount,
+        SEC1Amount,
+        SEC0Amount,
+        SEC1Amount,
+        wallet.address,
+        MaxUint256,
+        overrides
+      )
+
+      deadline = MaxUint256
+      const nonce = await wsecToken.swapNonces(wallet.address)
+      const digest = await getSwapDigest(
+        wsecToken,
+        { operator: wallet.address, spender: wallet.address },
+        nonce,
+        deadline
+      )
+
+      const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+      authorization = {
+        operator: wallet.address,
+        deadline,
+        v,
+        r: hexlify(r),
+        s: hexlify(s),
+      }
+    })
+
+    it('ERC -> SEC', async () => {
+      await ERC.approve(router.address, MaxUint256)
+
+      await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        amountIn,
+        ZERO_AMOUNT,
+        [ERC.address, SEC.address],
+        wallet.address,
+        deadline,
+        wsecToken.address === token0sec.address ? [authorization, EMPTY_SWAP_SIG] : [EMPTY_SWAP_SIG, authorization],
+        overrides
+      )
+    })
+
+    it('SEC -> ERC', async () => {
+      await SEC.approve(router.address, MaxUint256)
+
+      await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        amountIn,
+        ZERO_AMOUNT,
+        [SEC.address, ERC.address],
+        wallet.address,
+        deadline,
+        wsecToken.address === token0sec.address ? [authorization, EMPTY_SWAP_SIG] : [EMPTY_SWAP_SIG, authorization],
         overrides
       )
     })

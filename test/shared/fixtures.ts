@@ -6,6 +6,8 @@ import { expandTo18Decimals } from './utilities'
 
 import IxsV2Factory from '@ixswap1/v2-core/build/IxsV2Factory.json'
 import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
+import IxsWSecFactory from '@ixswap1/v2-core/build/IxsWSecFactory.json'
+import IxsWSec from '@ixswap1/v2-core/build/IxsWSec.json'
 
 import ERC20 from '../../build/ERC20.json'
 import WETH9 from '../../build/WETH9.json'
@@ -19,13 +21,18 @@ const overrides = {
 interface V2Fixture {
   token0: Contract
   token1: Contract
+  wsecToken: Contract
+  token0sec: Contract
+  token1sec: Contract
   WETH: Contract
   WETHPartner: Contract
   factoryV2: Contract
+  wSecFactory: Contract
   router02: Contract
   routerEventEmitter: Contract
   router: Contract
   pair: Contract
+  secPair: Contract
   WETHPair: Contract
 }
 
@@ -38,6 +45,16 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
 
   // deploy V2
   const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address], overrides)
+  
+  // deploy wsec factory
+  const wSecFactory = await deployContract(wallet, IxsWSecFactory, [factoryV2.address, [wallet.address]], overrides)
+  await factoryV2.setWSecFactory(wSecFactory.address); // back ref
+
+  // deploy wrapped security
+  await wSecFactory.createWSec('Tesla Equity', 'SEC', 18)
+  const { wSec: wsecTokenAddress } = await wSecFactory.getWSecUnpacked('Tesla Equity', 'SEC', 18)
+  const wsecToken = new Contract(wsecTokenAddress, JSON.stringify(IxsWSec.abi), provider).connect(wallet)
+  await wsecToken.mint(wallet.address, expandTo18Decimals(10000))
 
   // deploy routers
   const router02 = await deployContract(wallet, IxsV2Router02, [factoryV2.address, WETH.address], overrides)
@@ -49,11 +66,17 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
   await factoryV2.createPair(tokenA.address, tokenB.address)
   const pairAddress = await factoryV2.getPair(tokenA.address, tokenB.address)
   const pair = new Contract(pairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
-
   const token0Address = await pair.token0()
-
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
+
+  // initialize sec pair
+  await factoryV2.createPair(tokenA.address, wsecToken.address)
+  const wsecPairAddress = await factoryV2.getPair(tokenA.address, wsecToken.address)
+  const secPair = new Contract(wsecPairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
+  const token0secAddress = await secPair.token0()
+  const token0sec = tokenA.address === token0secAddress ? tokenA : wsecToken
+  const token1sec = tokenA.address === token0secAddress ? wsecToken : tokenA
 
   await factoryV2.createPair(WETH.address, WETHPartner.address)
   const WETHPairAddress = await factoryV2.getPair(WETH.address, WETHPartner.address)
@@ -62,13 +85,18 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
   return {
     token0,
     token1,
+    token0sec,
+    token1sec,
+    wsecToken,
     WETH,
     WETHPartner,
     factoryV2,
+    wSecFactory,
     router02,
     router: router02, // the default router, 01 had a minor bug
     routerEventEmitter,
     pair,
+    secPair,
     WETHPair
   }
 }

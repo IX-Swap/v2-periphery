@@ -9,6 +9,8 @@ import { v2Fixture } from './shared/fixtures'
 import { expandTo18Decimals, getApprovalDigest, getSwapDigest, SecAuthorization, MINIMUM_LIQUIDITY, EMPTY_SWAP_DIGEST, EMPTY_SWAP_SIG } from './shared/utilities'
 
 import DeflatingERC20 from '../build/DeflatingERC20.json'
+import DAIContract from '../build/DAI.json'
+import IxsWSec from '@ixswap1/v2-core/build/IxsWSec.json'
 import { ecsign } from 'ethereumjs-util'
 
 chai.use(solidity)
@@ -17,6 +19,7 @@ const overrides = {
   gasLimit: 9999999
 }
 
+const TOTAL_SUPPLY = expandTo18Decimals(10000)
 const ZERO_AMOUNT = expandTo18Decimals(0)
 
 describe('IxsV2Router02', () => {
@@ -158,7 +161,7 @@ describe('fee-on-transfer tokens', () => {
     WETH = fixture.WETH
     router = fixture.router02
 
-    DTT = await deployContract(wallet, DeflatingERC20, [expandTo18Decimals(10000)])
+    DTT = await deployContract(wallet, DeflatingERC20, [TOTAL_SUPPLY])
 
     // make a DTT<>WETH pair
     await fixture.factoryV2.createPair(DTT.address, WETH.address)
@@ -336,7 +339,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
     gasLimit: 9999999
   })
-  const [wallet] = provider.getWallets()
+  const [wallet, treasury] = provider.getWallets()
   const loadFixture = createFixtureLoader(provider, [wallet])
 
   let DTT: Contract
@@ -347,6 +350,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
   let secPair: Contract
   let token0sec: Contract
   let token1sec: Contract
+  let factoryV2: Contract
 
   beforeEach(async () => {
     const fixture = await loadFixture(v2Fixture)
@@ -357,13 +361,13 @@ describe('fee-on-transfer tokens: reloaded', () => {
     token0sec = fixture.token0sec
     token1sec = fixture.token1sec
     secPair = fixture.secPair
+    factoryV2 = fixture.factoryV2
 
-    DTT = await deployContract(wallet, DeflatingERC20, [expandTo18Decimals(10000)])
-    DTT2 = await deployContract(wallet, DeflatingERC20, [expandTo18Decimals(10000)])
+    DTT = await deployContract(wallet, DeflatingERC20, [TOTAL_SUPPLY])
+    DTT2 = await deployContract(wallet, DeflatingERC20, [TOTAL_SUPPLY])
 
     // make a DTT<>WETH pair
-    await fixture.factoryV2.createPair(DTT.address, DTT2.address)
-    const pairAddress = await fixture.factoryV2.getPair(DTT.address, DTT2.address)
+    await factoryV2.createPair(DTT.address, DTT2.address)
   })
 
   afterEach(async function () {
@@ -427,8 +431,12 @@ describe('fee-on-transfer tokens: reloaded', () => {
       ERC = token0sec.address == wsecToken.address ? token1sec : token0sec
       SEC = token0sec.address == wsecToken.address ? token0sec : token1sec
 
+      await factoryV2.setFeeTo(treasury.address)
+      await factoryV2.setSecFeeTo(treasury.address)
+
       await token0sec.approve(router.address, MaxUint256)
       await token1sec.approve(router.address, MaxUint256)
+      
       await router.addLiquidity(
         token0sec.address,
         token1sec.address,
@@ -484,6 +492,62 @@ describe('fee-on-transfer tokens: reloaded', () => {
         wallet.address,
         deadline,
         wsecToken.address === token0sec.address ? [authorization, EMPTY_SWAP_SIG] : [EMPTY_SWAP_SIG, authorization],
+        overrides
+      )
+    })
+
+    it('DAI -> WLINK (yarik)', async () => {
+      // deploy DAI
+      const DAI = await deployContract(wallet, DAIContract, [TOTAL_SUPPLY])
+
+      // deploy wLink2
+      await wSecFactory.createWSec('wLink2', 'wLink2', 18)
+      const { wSec: wlinkTokenAddress } = await wSecFactory.getWSecUnpacked('wLink2', 'wLink2', 18)
+      const WLINK = new Contract(wlinkTokenAddress, JSON.stringify(IxsWSec.abi), provider).connect(wallet)
+      await WLINK.mint(wallet.address, TOTAL_SUPPLY)
+
+      // make a DAI<>wLink2 pair
+      await factoryV2.createPair(DAI.address, WLINK.address)
+
+      const deadline = MaxUint256
+      const nonce = await WLINK.swapNonces(wallet.address)
+      const digest = await getSwapDigest(
+        WLINK,
+        { operator: wallet.address, spender: wallet.address },
+        nonce,
+        deadline
+      )
+
+      const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+      const authorization = {
+        operator: wallet.address,
+        deadline,
+        v,
+        r: hexlify(r),
+        s: hexlify(s),
+      }
+
+      await DAI.approve(router.address, MaxUint256)
+      await WLINK.approve(router.address, MaxUint256)
+
+      await router.addLiquidity(
+        DAI.address,
+        WLINK.address,
+        expandTo18Decimals(30),
+        expandTo18Decimals(45),
+        0,
+        0,
+        wallet.address,
+        MaxUint256
+      )
+      
+      await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        new BigNumber('1000000000000000000'), // 1
+        new BigNumber('1410000000000000000'), // 1.41
+        [DAI.address, WLINK.address],
+        wallet.address,
+        deadline,
+        [EMPTY_SWAP_SIG, authorization],
         overrides
       )
     })

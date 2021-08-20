@@ -29,8 +29,6 @@ module.exports = async function(deployer, network, accounts) {
     wethAddress = weth.address;
   }
 
-  /* ========= ORACLE DEPLOYMENT =========
-
   // trick to be compatible with waffle build
   DailySlidingWindowOracle01._json.contractName = "DailySlidingWindowOracle01";
   DailySlidingWindowOracle01._properties.contract_name.get = () => "DailySlidingWindowOracle01";
@@ -52,8 +50,6 @@ module.exports = async function(deployer, network, accounts) {
   console.info('DSW ORACLE =', oracle.address);
   console.info('DSW ORACLE > factory =', await oracle.factory());
   console.info('FACTORY V2 > oracle =', await factory.oracle());
-
-  */
   
   // trick to be compatible with waffle build
   IxsV2LiquidityRouter._json.contractName = "IxsV2LiquidityRouter";

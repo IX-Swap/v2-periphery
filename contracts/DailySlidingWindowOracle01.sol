@@ -1,6 +1,7 @@
 pragma solidity =0.6.6;
 
 import '@ixswap1/lib/contracts/libraries/FixedPoint.sol';
+import '@ixswap1/v2-core/contracts/interfaces/IIxsOracle.sol';
 
 import './libraries/SafeMath.sol';
 import './libraries/IxsV2Library.sol';
@@ -11,7 +12,7 @@ import './libraries/IxsV2OracleLibrary.sol';
 // `windowSize` with a precision of `windowSize / granularity`
 // note this is a singleton oracle and only needs to be deployed once per desired parameters, which
 // differs from the simple oracle which must be deployed once per pair.
-contract DailySlidingWindowOracle01 {
+contract DailySlidingWindowOracle01 is IIxsOracle {
     using FixedPoint for *;
     using SafeMath for uint256;
 
@@ -62,7 +63,7 @@ contract DailySlidingWindowOracle01 {
 
     // update the cumulative price for the observation at the current timestamp. each observation is updated at most
     // once per epoch period.
-    function update(address tokenA, address tokenB) external {
+    function update(address tokenA, address tokenB) external override {
         address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
 
         // populate the array with empty observations (first call only)
@@ -98,8 +99,11 @@ contract DailySlidingWindowOracle01 {
         amountOut = priceAverage.mul(amountIn).decode144();
     }
 
-    function canConsult(address tokenA, address tokenB) external view returns (bool) {
+    function canConsult(address tokenA, address tokenB) external view override returns (bool) {
         address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
+
+        if (pairObservations[pair].length <= 0) return false; // no observations at all...
+
         Observation storage firstObservation = getFirstObservationInWindow(pair);
 
         uint256 timeElapsed = block.timestamp - firstObservation.timestamp;
@@ -113,7 +117,7 @@ contract DailySlidingWindowOracle01 {
         address tokenIn,
         uint256 amountIn,
         address tokenOut
-    ) external view returns (uint256 amountOut) {
+    ) external view override returns (uint256 amountOut) {
         address pair = IxsV2Library.pairFor(factory, tokenIn, tokenOut);
         Observation storage firstObservation = getFirstObservationInWindow(pair);
 

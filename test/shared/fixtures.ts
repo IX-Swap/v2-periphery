@@ -13,6 +13,7 @@ import ERC20 from '../../build/ERC20.json'
 import WETH9 from '../../build/WETH9.json'
 import IxsV2LiquidityRouter from '../../build/IxsV2LiquidityRouter.json'
 import IxsV2SwapRouter from '../../build/IxsV2SwapRouter.json'
+import DailySlidingWindowOracle01 from '../../build/DailySlidingWindowOracle01.json'
 import RouterEventEmitter from '../../build/RouterEventEmitter.json'
 
 const overrides = {
@@ -46,6 +47,10 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
 
   // deploy V2
   const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address], overrides)
+
+  // deploy oracle
+  const oracle = await deployContract(wallet, DailySlidingWindowOracle01, [factoryV2.address], overrides)
+  await factoryV2.setOracle(oracle.address, '0x0000000000000000000000000000000000000000000000000000000000000000')
   
   // deploy wsec factory
   const wSecFactory = await deployContract(wallet, IxsWSecFactory, [factoryV2.address, [wallet.address]], overrides)

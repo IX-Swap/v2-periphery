@@ -5,13 +5,14 @@ import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
 import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Factory.sol';
 import '@ixswap1/lib/contracts/libraries/TransferHelper.sol';
 
-import './interfaces/IIxsV2Router02.sol';
+import './interfaces/IIxsV2Router.sol';
+import './interfaces/IIxsV2SwapRouter.sol';
 import './libraries/IxsV2Library.sol';
 import './libraries/SafeMath.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IWETH.sol';
 
-contract IxsV2Router02 is IIxsV2Router02 {
+contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
     using SafeMath for uint256;
 
     address public immutable override factory;
@@ -31,217 +32,6 @@ contract IxsV2Router02 is IIxsV2Router02 {
         assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
 
-    // **** ADD LIQUIDITY ****
-    function _addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin
-    ) internal virtual returns (uint256 amountA, uint256 amountB) {
-        // create the pair if it doesn't exist yet
-        if (IIxsV2Factory(factory).getPair(tokenA, tokenB) == address(0)) {
-            IIxsV2Factory(factory).createPair(tokenA, tokenB);
-        }
-        (uint256 reserveA, uint256 reserveB) = IxsV2Library.getReserves(factory, tokenA, tokenB);
-        if (reserveA == 0 && reserveB == 0) {
-            (amountA, amountB) = (amountADesired, amountBDesired);
-        } else {
-            uint256 amountBOptimal = IxsV2Library.quote(amountADesired, reserveA, reserveB);
-            if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, 'IxsV2Router: INSUFFICIENT_B_AMOUNT');
-                (amountA, amountB) = (amountADesired, amountBOptimal);
-            } else {
-                uint256 amountAOptimal = IxsV2Library.quote(amountBDesired, reserveB, reserveA);
-                assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, 'IxsV2Router: INSUFFICIENT_A_AMOUNT');
-                (amountA, amountB) = (amountAOptimal, amountBDesired);
-            }
-        }
-    }
-
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    )
-        external
-        virtual
-        override
-        ensure(deadline)
-        returns (
-            uint256 amountA,
-            uint256 amountB,
-            uint256 liquidity
-        )
-    {
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
-        address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IIxsV2Pair(pair).mint(to);
-    }
-
-    function addLiquidityETH(
-        address token,
-        uint256 amountTokenDesired,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    )
-        external
-        payable
-        virtual
-        override
-        ensure(deadline)
-        returns (
-            uint256 amountToken,
-            uint256 amountETH,
-            uint256 liquidity
-        )
-    {
-        (amountToken, amountETH) = _addLiquidity(
-            token,
-            WETH,
-            amountTokenDesired,
-            msg.value,
-            amountTokenMin,
-            amountETHMin
-        );
-        address pair = IxsV2Library.pairFor(factory, token, WETH);
-        TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
-        IWETH(WETH).deposit{value: amountETH}();
-        assert(IWETH(WETH).transfer(pair, amountETH));
-        liquidity = IIxsV2Pair(pair).mint(to);
-        // refund dust eth, if any
-        if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
-    }
-
-    // **** REMOVE LIQUIDITY ****
-    function removeLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) public virtual override ensure(deadline) returns (uint256 amountA, uint256 amountB) {
-        address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
-        IIxsV2Pair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
-        (uint256 amount0, uint256 amount1) = IIxsV2Pair(pair).burn(to);
-        (address token0, ) = IxsV2Library.sortTokens(tokenA, tokenB);
-        (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
-        require(amountA >= amountAMin, 'IxsV2Router: INSUFFICIENT_A_AMOUNT');
-        require(amountB >= amountBMin, 'IxsV2Router: INSUFFICIENT_B_AMOUNT');
-    }
-
-    function removeLiquidityETH(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    ) public virtual override ensure(deadline) returns (uint256 amountToken, uint256 amountETH) {
-        (amountToken, amountETH) = removeLiquidity(
-            token,
-            WETH,
-            liquidity,
-            amountTokenMin,
-            amountETHMin,
-            address(this),
-            deadline
-        );
-        TransferHelper.safeTransfer(token, to, amountToken);
-        IWETH(WETH).withdraw(amountETH);
-        TransferHelper.safeTransferETH(to, amountETH);
-    }
-
-    function removeLiquidityWithPermit(
-        address tokenA,
-        address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override returns (uint256 amountA, uint256 amountB) {
-        address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
-        uint256 value = approveMax ? uint256(-1) : liquidity;
-        IIxsV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
-    }
-
-    function removeLiquidityETHWithPermit(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override returns (uint256 amountToken, uint256 amountETH) {
-        address pair = IxsV2Library.pairFor(factory, token, WETH);
-        uint256 value = approveMax ? uint256(-1) : liquidity;
-        IIxsV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
-    }
-
-    // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens) ****
-    function removeLiquidityETHSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    ) public virtual override ensure(deadline) returns (uint256 amountETH) {
-        (, amountETH) = removeLiquidity(token, WETH, liquidity, amountTokenMin, amountETHMin, address(this), deadline);
-        TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
-        IWETH(WETH).withdraw(amountETH);
-        TransferHelper.safeTransferETH(to, amountETH);
-    }
-
-    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override returns (uint256 amountETH) {
-        address pair = IxsV2Library.pairFor(factory, token, WETH);
-        uint256 value = approveMax ? uint256(-1) : liquidity;
-        IIxsV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
-            token,
-            liquidity,
-            amountTokenMin,
-            amountETHMin,
-            to,
-            deadline
-        );
-    }
-
     // **** SWAP ****
     // requires the initial amount to have already been sent to the first pair
     function _swap(
@@ -258,13 +48,26 @@ contract IxsV2Router02 is IIxsV2Router02 {
                 ? (uint256(0), amountOut)
                 : (amountOut, uint256(0));
             address to = i < path.length - 2 ? IxsV2Library.pairFor(factory, output, path[i + 2]) : _to;
-            IIxsV2Pair(IxsV2Library.pairFor(factory, input, output)).swap(
-                amount0Out,
-                amount1Out,
-                to,
-                new bytes(0),
-                authorizations
-            );
+
+            {
+                // avoid stack to deep error
+                address _input = input;
+                (
+                    IIxsV2Pair.SecAuthorization memory authorizationA,
+                    IIxsV2Pair.SecAuthorization memory authorizationB
+                ) = (authorizations[i], authorizations[i + 1]);
+                IIxsV2Pair(IxsV2Library.pairFor(factory, _input, output)).swap(
+                    amount0Out,
+                    amount1Out,
+                    to,
+                    new bytes(0),
+                    _authStruct2ArrayToDynamic(
+                        _input == token0
+                            ? [authorizationA, authorizationB]
+                            : [authorizationB, authorizationA]
+                    )
+                );
+            }
         }
     }
 
@@ -283,21 +86,20 @@ contract IxsV2Router02 is IIxsV2Router02 {
             address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountIn = amountIn;
-            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsOut(
-                factory, 
+                factory,
                 _amountIn,
                 _path,
-                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+                _bool2ArrayToDynamic(
+                    _token0 == _path0
+                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
+                        : [pair.isToken1Sec(), pair.isToken0Sec()]
+                )
             );
             require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         }
-        TransferHelper.safeTransferFrom(
-            path[0],
-            msg.sender,
-            address(pair),
-            amounts[0]
-        );
+        TransferHelper.safeTransferFrom(path[0], msg.sender, address(pair), amounts[0]);
         _swap(amounts, path, to, authorizations);
     }
 
@@ -316,21 +118,20 @@ contract IxsV2Router02 is IIxsV2Router02 {
             address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountOut = amountOut;
-            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsIn(
-                factory, 
+                factory,
                 _amountOut,
                 _path,
-                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+                _bool2ArrayToDynamic(
+                    _token0 == _path0
+                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
+                        : [pair.isToken1Sec(), pair.isToken0Sec()]
+                )
             );
             require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         }
-        TransferHelper.safeTransferFrom(
-            path[0],
-            msg.sender,
-            address(pair),
-            amounts[0]
-        );
+        TransferHelper.safeTransferFrom(path[0], msg.sender, address(pair), amounts[0]);
         _swap(amounts, path, to, authorizations);
     }
 
@@ -348,12 +149,16 @@ contract IxsV2Router02 is IIxsV2Router02 {
             address _path0 = path[0];
             address _path1 = path[1];
             address[] memory _path = path;
-            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsOut(
                 factory,
                 msg.value,
                 _path,
-                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+                _bool2ArrayToDynamic(
+                    _token0 == _path0
+                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
+                        : [pair.isToken1Sec(), pair.isToken0Sec()]
+                )
             );
             require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         }
@@ -378,21 +183,20 @@ contract IxsV2Router02 is IIxsV2Router02 {
             address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountOut = amountOut;
-            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsIn(
-                factory, 
+                factory,
                 _amountOut,
                 _path,
-                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+                _bool2ArrayToDynamic(
+                    _token0 == _path0
+                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
+                        : [pair.isToken1Sec(), pair.isToken0Sec()]
+                )
             );
             require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         }
-        TransferHelper.safeTransferFrom(
-            path[0],
-            msg.sender,
-            address(pair),
-            amounts[0]
-        );
+        TransferHelper.safeTransferFrom(path[0], msg.sender, address(pair), amounts[0]);
         _swap(amounts, path, address(this), authorizations);
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
@@ -414,21 +218,20 @@ contract IxsV2Router02 is IIxsV2Router02 {
             address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountIn = amountIn;
-            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsOut(
-                factory, 
+                factory,
                 _amountIn,
                 _path,
-                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+                _bool2ArrayToDynamic(
+                    _token0 == _path0
+                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
+                        : [pair.isToken1Sec(), pair.isToken0Sec()]
+                )
             );
             require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        }        
-        TransferHelper.safeTransferFrom(
-            path[0],
-            msg.sender,
-            address(pair),
-            amounts[0]
-        );
+        }
+        TransferHelper.safeTransferFrom(path[0], msg.sender, address(pair), amounts[0]);
         _swap(amounts, path, address(this), authorizations);
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
@@ -449,12 +252,16 @@ contract IxsV2Router02 is IIxsV2Router02 {
             address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountOut = amountOut;
-            (address _token0,) = IxsV2Library.sortTokens(_path0, _path1);
+            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsIn(
-                factory, 
+                factory,
                 _amountOut,
                 _path,
-                _bool2ArrayToDynamic(_token0 == _path0 ? [pair.isToken0Sec(), pair.isToken1Sec()] : [pair.isToken1Sec(), pair.isToken0Sec()])
+                _bool2ArrayToDynamic(
+                    _token0 == _path0
+                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
+                        : [pair.isToken1Sec(), pair.isToken0Sec()]
+                )
             );
             require(amounts[0] <= msg.value, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         }
@@ -472,7 +279,7 @@ contract IxsV2Router02 is IIxsV2Router02 {
         address _to,
         IIxsV2Pair.SecAuthorization[] memory authorizations
     ) internal virtual {
-        for (uint256 i; i < path.length - 1; i++) {            
+        for (uint256 i; i < path.length - 1; i++) {
             IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[i], path[i + 1]));
 
             uint256 amountInput;
@@ -486,27 +293,46 @@ contract IxsV2Router02 is IIxsV2Router02 {
                     ? (reserve0, reserve1)
                     : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = IxsV2Library.getAmountOut(amountInput, reserveInput, reserveOutput, pair.isSecurityPool());
+                amountOutput = IxsV2Library.getAmountOut(
+                    amountInput,
+                    reserveInput,
+                    reserveOutput,
+                    pair.isSecurityPool()
+                );
             }
 
             uint256 amount0Out;
             uint256 amount1Out;
+            IIxsV2Pair.SecAuthorization[] memory sortedAuthorizations;
             {
                 // scope to avoid stack too deep errors
-                (address input, address output) = (path[i], path[i + 1]);
+                address[] memory _path = path;
+                IIxsV2Pair.SecAuthorization[] memory _authorizations = authorizations;
+                (
+                    IIxsV2Pair.SecAuthorization memory authorizationA,
+                    IIxsV2Pair.SecAuthorization memory authorizationB
+                ) = (_authorizations[i], _authorizations[i + 1]);
+                (address input, address output) = (_path[i], _path[i + 1]);
                 (address token0, ) = IxsV2Library.sortTokens(input, output);
-                (amount0Out, amount1Out) = input == token0
-                ? (uint256(0), amountOutput)
-                : (amountOutput, uint256(0));
+                (amount0Out, amount1Out) = input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+                sortedAuthorizations = _authStruct2ArrayToDynamic(
+                    input == token0
+                        ? [authorizationA, authorizationB]
+                        : [authorizationB, authorizationA]
+                );
             }
-            
-            pair.swap(
-                amount0Out,
-                amount1Out,
-                i < path.length - 2 ? IxsV2Library.pairFor(factory, path[i + 1], path[i + 2]) : _to, // to
-                new bytes(0),
-                authorizations
-            );
+
+            {
+                // scope to avoid stack too deep errors
+                address[] memory _path = path;
+                pair.swap(
+                    amount0Out,
+                    amount1Out,
+                    i < _path.length - 2 ? IxsV2Library.pairFor(factory, _path[i + 1], _path[i + 2]) : _to, // to
+                    new bytes(0),
+                    sortedAuthorizations
+                );
+            }
         }
     }
 
@@ -590,28 +416,34 @@ contract IxsV2Router02 is IIxsV2Router02 {
         return IxsV2Library.getAmountIn(amountOut, reserveIn, reserveOut, isSecurityPool);
     }
 
-    function getAmountsOut(uint256 amountIn, address[] memory path, bool[] memory secPath)
-        public
-        view
-        virtual
-        override
-        returns (uint256[] memory amounts)
-    {
+    function getAmountsOut(
+        uint256 amountIn,
+        address[] memory path,
+        bool[] memory secPath
+    ) public view virtual override returns (uint256[] memory amounts) {
         return IxsV2Library.getAmountsOut(factory, amountIn, path, secPath);
     }
 
-    function getAmountsIn(uint256 amountOut, address[] memory path, bool[] memory secPath)
-        public
-        view
-        virtual
-        override
-        returns (uint256[] memory amounts)
-    {
+    function getAmountsIn(
+        uint256 amountOut,
+        address[] memory path,
+        bool[] memory secPath
+    ) public view virtual override returns (uint256[] memory amounts) {
         return IxsV2Library.getAmountsIn(factory, amountOut, path, secPath);
     }
-    
+
     function _bool2ArrayToDynamic(bool[2] memory arr) internal pure returns (bool[] memory dynarr) {
         dynarr = new bool[](2);
+        dynarr[0] = arr[0];
+        dynarr[1] = arr[1];
+    }
+
+    function _authStruct2ArrayToDynamic(IIxsV2Pair.SecAuthorization[2] memory arr)
+        internal
+        pure
+        returns (IIxsV2Pair.SecAuthorization[] memory dynarr)
+    {
+        dynarr = new IIxsV2Pair.SecAuthorization[](2);
         dynarr[0] = arr[0];
         dynarr[1] = arr[1];
     }

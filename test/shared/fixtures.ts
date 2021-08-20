@@ -11,7 +11,8 @@ import IxsWSec from '@ixswap1/v2-core/build/IxsWSec.json'
 
 import ERC20 from '../../build/ERC20.json'
 import WETH9 from '../../build/WETH9.json'
-import IxsV2Router02 from '../../build/IxsV2Router02.json'
+import IxsV2LiquidityRouter from '../../build/IxsV2LiquidityRouter.json'
+import IxsV2SwapRouter from '../../build/IxsV2SwapRouter.json'
 import RouterEventEmitter from '../../build/RouterEventEmitter.json'
 
 const overrides = {
@@ -28,9 +29,9 @@ interface V2Fixture {
   WETHPartner: Contract
   factoryV2: Contract
   wSecFactory: Contract
-  router02: Contract
   routerEventEmitter: Contract
-  router: Contract
+  liquidityRouter: Contract
+  swapRouter: Contract
   pair: Contract
   secPair: Contract
   WETHPair: Contract
@@ -57,7 +58,8 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
   await wsecToken.mint(wallet.address, expandTo18Decimals(10000))
 
   // deploy routers
-  const router02 = await deployContract(wallet, IxsV2Router02, [factoryV2.address, WETH.address], overrides)
+  const liquidityRouter = await deployContract(wallet, IxsV2LiquidityRouter, [factoryV2.address, WETH.address], overrides)
+  const swapRouter = await deployContract(wallet, IxsV2SwapRouter, [factoryV2.address, WETH.address], overrides)
 
   // event emitter for testing
   const routerEventEmitter = await deployContract(wallet, RouterEventEmitter, [], overrides)
@@ -92,8 +94,8 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
     WETHPartner,
     factoryV2,
     wSecFactory,
-    router02,
-    router: router02, // the default router, 01 had a minor bug
+    liquidityRouter,
+    swapRouter,
     routerEventEmitter,
     pair,
     secPair,

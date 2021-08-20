@@ -31,7 +31,8 @@
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3",
     "@truffle/hdwallet-provider": "~1.4.0",
-    "truffle": "^5.3.8"
+    "truffle": "^5.3.8",
+    "@truffle/contract": "~4.3.30"
   },
   "scripts": {
     "lint": "yarn prettier ./test/*.ts --check",
@@ -45,7 +46,8 @@
     "build": "yarn compile",
     "deploy-dev": "if [ ! -z $WSL_DISTRO_NAME ]; then export WSL_HOST=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'); fi; yarn truffle migrate --compile-none --network dev",
     "deploy-stage": "yarn truffle migrate --compile-none --network stage",
-    "deploy-prod": "yarn truffle migrate --compile-none --network prod"
+    "deploy-prod": "yarn truffle migrate --compile-none --network prod",
+    "test-sec-swap-kovan": "node test/validate-sec-swap-kovan.js"
   },
   "license": "GPL-3.0-or-later"
 }

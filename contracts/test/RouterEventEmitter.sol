@@ -1,6 +1,6 @@
 pragma solidity =0.6.6;
 
-import '../interfaces/IIxsV2Router01.sol';
+import '../interfaces/IIxsV2SwapRouter.sol';
 
 contract RouterEventEmitter {
     event Amounts(uint256[] amounts);
@@ -18,7 +18,7 @@ contract RouterEventEmitter {
         (bool success, bytes memory returnData) =
             router.delegatecall(
                 abi.encodeWithSelector(
-                    IIxsV2Router01(router).swapExactTokensForTokens.selector,
+                    IIxsV2SwapRouter(router).swapExactTokensForTokens.selector,
                     amountIn,
                     amountOutMin,
                     path,
@@ -41,7 +41,7 @@ contract RouterEventEmitter {
         (bool success, bytes memory returnData) =
             router.delegatecall(
                 abi.encodeWithSelector(
-                    IIxsV2Router01(router).swapTokensForExactTokens.selector,
+                    IIxsV2SwapRouter(router).swapTokensForExactTokens.selector,
                     amountOut,
                     amountInMax,
                     path,
@@ -63,7 +63,7 @@ contract RouterEventEmitter {
         (bool success, bytes memory returnData) =
             router.delegatecall(
                 abi.encodeWithSelector(
-                    IIxsV2Router01(router).swapExactETHForTokens.selector,
+                    IIxsV2SwapRouter(router).swapExactETHForTokens.selector,
                     amountOutMin,
                     path,
                     to,
@@ -85,7 +85,7 @@ contract RouterEventEmitter {
         (bool success, bytes memory returnData) =
             router.delegatecall(
                 abi.encodeWithSelector(
-                    IIxsV2Router01(router).swapTokensForExactETH.selector,
+                    IIxsV2SwapRouter(router).swapTokensForExactETH.selector,
                     amountOut,
                     amountInMax,
                     path,
@@ -108,7 +108,7 @@ contract RouterEventEmitter {
         (bool success, bytes memory returnData) =
             router.delegatecall(
                 abi.encodeWithSelector(
-                    IIxsV2Router01(router).swapExactTokensForETH.selector,
+                    IIxsV2SwapRouter(router).swapExactTokensForETH.selector,
                     amountIn,
                     amountOutMin,
                     path,
@@ -130,7 +130,7 @@ contract RouterEventEmitter {
         (bool success, bytes memory returnData) =
             router.delegatecall(
                 abi.encodeWithSelector(
-                    IIxsV2Router01(router).swapETHForExactTokens.selector,
+                    IIxsV2SwapRouter(router).swapETHForExactTokens.selector,
                     amountOut,
                     path,
                     to,

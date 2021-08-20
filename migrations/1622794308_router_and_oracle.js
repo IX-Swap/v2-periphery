@@ -1,5 +1,6 @@
 const DailySlidingWindowOracle01 = artifacts.require('DailySlidingWindowOracle01');
-const IxsV2Router02 = artifacts.require('IxsV2Router02');
+const IxsV2LiquidityRouter = artifacts.require('IxsV2LiquidityRouter');
+const IxsV2SwapRouter = artifacts.require('IxsV2SwapRouter');
 const IIxsV2Factory = artifacts.require('IIxsV2Factory');
 const IIxsV2Pair = artifacts.require('IIxsV2Pair');
 const ERC20 = artifacts.require('ERC20');
@@ -28,6 +29,8 @@ module.exports = async function(deployer, network, accounts) {
     wethAddress = weth.address;
   }
 
+  /* ========= ORACLE DEPLOYMENT =========
+
   // trick to be compatible with waffle build
   DailySlidingWindowOracle01._json.contractName = "DailySlidingWindowOracle01";
   DailySlidingWindowOracle01._properties.contract_name.get = () => "DailySlidingWindowOracle01";
@@ -50,16 +53,29 @@ module.exports = async function(deployer, network, accounts) {
   console.info('DSW ORACLE > factory =', await oracle.factory());
   console.info('FACTORY V2 > oracle =', await factory.oracle());
 
+  */
+  
   // trick to be compatible with waffle build
-  IxsV2Router02._json.contractName = "IxsV2Router02";
-  IxsV2Router02._properties.contract_name.get = () => "IxsV2Router02";
-  IxsV2Router02._properties.contractName.get = () => "IxsV2Router02";
-  await deployer.deploy(IxsV2Router02, FACTORY_ADDRESS, wethAddress);
-  const router = await IxsV2Router02.deployed();
+  IxsV2LiquidityRouter._json.contractName = "IxsV2LiquidityRouter";
+  IxsV2LiquidityRouter._properties.contract_name.get = () => "IxsV2LiquidityRouter";
+  IxsV2LiquidityRouter._properties.contractName.get = () => "IxsV2LiquidityRouter";
+  await deployer.deploy(IxsV2LiquidityRouter, FACTORY_ADDRESS, wethAddress);
+  const liquidityRouter = await IxsV2LiquidityRouter.deployed();
 
-  console.info('ROUTER V2 /02 =', router.address);
-  console.info('ROUTER V2 /02 > factory =', await router.factory());
-  console.info('ROUTER V2 /02 > WETH =', await router.WETH());
+  console.info('LIQUIDITY ROUTER V2 =', liquidityRouter.address);
+  console.info('LIQUIDITY ROUTER V2 > factory =', await liquidityRouter.factory());
+  console.info('LIQUIDITY ROUTER V2 > WETH =', await liquidityRouter.WETH());
+
+  // trick to be compatible with waffle build
+  IxsV2SwapRouter._json.contractName = "IxsV2SwapRouter";
+  IxsV2SwapRouter._properties.contract_name.get = () => "IxsV2SwapRouter";
+  IxsV2SwapRouter._properties.contractName.get = () => "IxsV2SwapRouter";
+  await deployer.deploy(IxsV2SwapRouter, FACTORY_ADDRESS, wethAddress);
+  const swapRouter = await IxsV2SwapRouter.deployed();
+
+  console.info('SWAP ROUTER V2 =', swapRouter.address);
+  console.info('SWAP ROUTER V2 > factory =', await swapRouter.factory());
+  console.info('SWAP ROUTER V2 > WETH =', await swapRouter.WETH());
 
   // Validate deploy....
   if (TEST) {
@@ -83,10 +99,10 @@ module.exports = async function(deployer, network, accounts) {
     const erc20 = await ERC20.deployed();
     
     console.info('> erc20->approve [ROUTER]');
-    await erc20.approve(router.address, TEST_SUPPLY);
+    await erc20.approve(liquidityRouter.address, TEST_SUPPLY);
 
-    console.info('> router->addLiquidityETH [TT<>WETH9]');
-    await router.addLiquidityETH(erc20.address, TEST_SUPPLY, TEST_SUPPLY, TEST_ETH, RECEIVER, DEADLINE, {
+    console.info('> liquidityRouter->addLiquidityETH [TT<>WETH9]');
+    await liquidityRouter.addLiquidityETH(erc20.address, TEST_SUPPLY, TEST_SUPPLY, TEST_ETH, RECEIVER, DEADLINE, {
       value: TEST_ETH
     });
 

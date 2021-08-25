@@ -210,7 +210,7 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
         uint256 amountETHMin,
         address to,
         uint256 deadline
-    ) public virtual ensure(deadline) returns (uint256 amountETH) {
+    ) public virtual override ensure(deadline) returns (uint256 amountETH) {
         (, amountETH) = removeLiquidity(token, WETH, liquidity, amountTokenMin, amountETHMin, address(this), deadline);
         TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
         IWETH(WETH).withdraw(amountETH);
@@ -228,7 +228,7 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external virtual returns (uint256 amountETH) {
+    ) external virtual override returns (uint256 amountETH) {
         address pair = IxsV2Library.pairFor(factory, token, WETH);
         uint256 value = approveMax ? uint256(-1) : liquidity;
         IIxsV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);

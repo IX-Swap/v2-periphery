@@ -1,11 +1,11 @@
 module.exports = {
     dev: {
-        FACTORY_ADDRESS:  '0xc3892dB94A97100F765955B17c4682Fa0C0a016f', // IXS FactoryV2 deployment address
+        FACTORY_ADDRESS:  '', // IXS FactoryV2 deployment address
         TEST: true, // test LP creation
         WETH_ADDRESS: null, // this will be deployed automatically when null
     },
     stage: {
-        FACTORY_ADDRESS:  '0xF6438F59e072b7391de65d90EEBbf8529013BA65', // IXS FactoryV2 deployment address
+        FACTORY_ADDRESS:  '0x62539c2d42265ebEA7ad4e515A6f759190d07636', // IXS FactoryV2 deployment address
         TEST: true, // test LP creation
         /**
          * DO NOT CHANGE UNLESS YOU KNOW WHAT YOU DO!

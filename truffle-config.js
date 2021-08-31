@@ -42,7 +42,8 @@ module.exports = {
             network_id: 1,
             networkCheckTimeout: 10000000,
             confirmations: 2,
-            timeoutBlocks: 200,  
+            timeoutBlocks: 200,
+            gasPrice: 100000000000, // 100 gwei (current cost in eth station)
         },
     },
 

@@ -594,20 +594,35 @@ describe('fee-on-transfer tokens: reloaded', () => {
 
       const deadline = MaxUint256
       const nonce = await WLINK.swapNonces(wallet.address)
+      const nonce2 = nonce.add(1)
       const digest = await getSwapDigest(
         WLINK,
         { operator: wallet.address, spender: wallet.address },
         nonce,
         deadline
       )
+      const digest2 = await getSwapDigest(
+        WLINK,
+        { operator: wallet.address, spender: wallet.address },
+        nonce2,
+        deadline
+      )
 
       const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+      const { v: v2, r: r2, s: s2 } = ecsign(Buffer.from(digest2.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
       const authorization = {
         operator: wallet.address,
         deadline,
         v,
         r: hexlify(r),
         s: hexlify(s),
+      }
+      const authorization2 = {
+        operator: wallet.address,
+        deadline,
+        v: v2,
+        r: hexlify(r2),
+        s: hexlify(s2),
       }
 
       await DAI.approve(liquidityRouter.address, MaxUint256)
@@ -641,7 +656,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
       await DAI.approve(swapRouter.address, MaxUint256)
 
       await swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        expandTo18Decimals(10),
+        expandTo18Decimals(5),
         0,
         [DAI.address, WLINK.address, WETH.address],
         wallet.address,
@@ -649,8 +664,18 @@ describe('fee-on-transfer tokens: reloaded', () => {
         [EMPTY_SWAP_SIG, authorization, EMPTY_SWAP_SIG],
         overrides
       )
+      
+      await swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        expandTo18Decimals(5),
+        0,
+        [DAI.address, WLINK.address, WETH.address],
+        wallet.address,
+        deadline,
+        [EMPTY_SWAP_SIG, authorization2, EMPTY_SWAP_SIG],
+        overrides
+      )
 
-      expect(await WETH.balanceOf(wallet.address)).to.eq('9611641059487045712')
+      expect(await WETH.balanceOf(wallet.address)).to.eq('9611175416784232097')
     })
   })
 })

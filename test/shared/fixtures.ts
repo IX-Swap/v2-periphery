@@ -4,6 +4,7 @@ import { deployContract } from 'ethereum-waffle'
 
 import { expandTo18Decimals } from './utilities'
 
+import PairBytecodeProvider from '@ixswap1/v2-core/build/PairBytecodeProvider.json'
 import IxsV2Factory from '@ixswap1/v2-core/build/IxsV2Factory.json'
 import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
 import IxsWSecFactory from '@ixswap1/v2-core/build/IxsWSecFactory.json'
@@ -28,6 +29,7 @@ interface V2Fixture {
   token1sec: Contract
   WETH: Contract
   WETHPartner: Contract
+  pairBytecodeProvider: Contract
   factoryV2: Contract
   wSecFactory: Contract
   routerEventEmitter: Contract
@@ -46,7 +48,8 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
   const WETHPartner = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
 
   // deploy V2
-  const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address], overrides)
+  const pairBytecodeProvider = await deployContract(wallet, PairBytecodeProvider, [], overrides)
+  const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address, pairBytecodeProvider.address], overrides)
 
   // deploy oracle
   const oracle = await deployContract(wallet, DailySlidingWindowOracle01, [factoryV2.address], overrides)
@@ -97,6 +100,7 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
     wsecToken,
     WETH,
     WETHPartner,
+    pairBytecodeProvider,
     factoryV2,
     wSecFactory,
     liquidityRouter,

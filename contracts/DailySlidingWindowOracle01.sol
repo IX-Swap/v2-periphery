@@ -9,7 +9,8 @@ import './libraries/IxsV2OracleLibrary.sol';
 
 // Based on ExampleComputeLiquidityValue (thus base on tested parent)
 // sliding window oracle that uses observations collected over a window to provide moving price averages in the past
-// `windowSize` with a precision of `windowSize / granularity`
+// `windowSize` with a precision of `windowSize / granularity`.
+// It is using most recent observation available within the last `fallbackWindowSize` in case the desired observation is missing.
 // note this is a singleton oracle and only needs to be deployed once per desired parameters, which
 // differs from the simple oracle which must be deployed once per pair.
 contract DailySlidingWindowOracle01 is IIxsOracle {
@@ -23,8 +24,13 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
     }
 
     address public immutable factory;
+    
     // the desired amount of time over which the moving average should be computed, e.g. 24 hours
     uint256 public constant windowSize = 86400; // 1 day
+
+    // the desired amount of time over which the moving average should be computed, e.g. 48 hours
+    uint256 public constant fallbackWindowSize = 86400 * 2; // 2 days
+
     // the number of observations stored for each pair, i.e. how many price observations are stored for the window.
     // as granularity increases from 1, more frequent updates are needed, but moving averages become more precise.
     // averages are computed over intervals with sizes in the range:
@@ -33,11 +39,15 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
     //   the period:
     //   [now - [22 hours, 24 hours], now]
     uint8 public constant granularity = 24; // 24 oservations per window, every hour basically
+    
     // this is redundant with granularity and windowSize, but stored for gas savings & informational purposes.
     uint256 public immutable periodSize;
 
     // mapping from pair address to a list of price observations of that pair
     mapping(address => Observation[]) public pairObservations;
+
+    // mapping from pair address the index of the last observation of that pair
+    mapping(address => uint8) public pairFallbackObservationIndex;
 
     constructor(address factory_) public {
         require(
@@ -61,6 +71,18 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
         firstObservation = pairObservations[pair][firstObservationIndex];
     }
 
+    function hasFallbackObservation(address pair) private view returns (bool) {
+        return pairFallbackObservationIndex[pair] > 0;
+    }
+
+    // returns fallback observation for a pair (the last observation)
+    function getFallbackObservation(address pair) private view returns (Observation storage fallbackObservation) {
+        require(hasFallbackObservation(pair), 'SlidingWindowOracle: MISSING_FALLBACK_OBSERVATION');
+
+        // take in consideration the +1 offset, never underflows...
+        fallbackObservation = pairObservations[pair][pairFallbackObservationIndex[pair] - 1];
+    }
+
     // update the cumulative price for the observation at the current timestamp. each observation is updated at most
     // once per epoch period.
     function update(address tokenA, address tokenB) external override {
@@ -82,6 +104,8 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
             observation.timestamp = block.timestamp;
             observation.price0Cumulative = price0Cumulative;
             observation.price1Cumulative = price1Cumulative;
+            // keep the +1 offset so that the 0 index will serve as an indicator that there was no observation at all
+            pairFallbackObservationIndex[pair] = observationIndex + 1;
         }
     }
 
@@ -105,26 +129,53 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
         if (pairObservations[pair].length <= 0) return false; // no observations at all...
 
         Observation storage firstObservation = getFirstObservationInWindow(pair);
-
         uint256 timeElapsed = block.timestamp - firstObservation.timestamp;
-        return timeElapsed <= windowSize;
+
+        if (timeElapsed <= windowSize) {
+            return true;
+        }
+        
+        if (hasFallbackObservation(pair)) {
+            Observation storage fallbackObservation = getFallbackObservation(pair);
+            uint256 timeElapsedSinceLastObservation = block.timestamp - fallbackObservation.timestamp;
+
+            return timeElapsedSinceLastObservation <= fallbackWindowSize;
+        }
+
+        return false;
     }
 
     // returns the amount out corresponding to the amount in for a given token using the moving average over the time
     // range [now - [windowSize, windowSize - periodSize * 2], now]
     // update must have been called for the bucket corresponding to timestamp `now - windowSize`
+    // as a fallback- the last observation within the fallbackWindowSize
     function consult(
         address tokenIn,
         uint256 amountIn,
         address tokenOut
     ) external view override returns (uint256 amountOut) {
         address pair = IxsV2Library.pairFor(factory, tokenIn, tokenOut);
-        Observation storage firstObservation = getFirstObservationInWindow(pair);
 
+        require(pairObservations[pair].length > 0, 'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION');
+
+        uint256 _windowSize = windowSize;
+        Observation storage firstObservation = getFirstObservationInWindow(pair);
         uint256 timeElapsed = block.timestamp - firstObservation.timestamp;
-        require(timeElapsed <= windowSize, 'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION');
+
+        if (timeElapsed > _windowSize && hasFallbackObservation(pair)) {
+            firstObservation = getFallbackObservation(pair);
+            timeElapsed = block.timestamp - firstObservation.timestamp;
+            _windowSize = fallbackWindowSize;
+        }
+
+        // checking firstObservation.timestamp to be > 0 does not make any difference here
+        // as the timeElapsed will be whole epoch time, indeed bigger than _windowSize
+        require(timeElapsed <= _windowSize, 'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION');
         // should never happen.
-        require(timeElapsed >= windowSize - periodSize * 2, 'SlidingWindowOracle: UNEXPECTED_TIME_ELAPSED');
+        require(
+            _windowSize == fallbackWindowSize || timeElapsed >= _windowSize - periodSize * 2,
+            'SlidingWindowOracle: UNEXPECTED_TIME_ELAPSED'
+        );
 
         (uint256 price0Cumulative, uint256 price1Cumulative, ) = IxsV2OracleLibrary.currentCumulativePrices(pair);
         (address token0, ) = IxsV2Library.sortTokens(tokenIn, tokenOut);

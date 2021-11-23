@@ -28,7 +28,7 @@ library IxsV2Library {
                         hex'ff',
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex'0e22a606cc7aea6bb6e978244b9c5fab72da8763bd80af9e9f8ba0c55cf256c0' // init code hash, ref: sdk/src/constants.ts#6
+                        hex'f9e09d42bd47a6b30c2fc75268656370e9bd4c87e2106c66e2df9665406efa58' // init code hash, ref: sdk/src/constants.ts#6
                     )
                 )
             )

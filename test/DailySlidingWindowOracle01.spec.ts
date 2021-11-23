@@ -132,14 +132,14 @@ describe('DailySlidingWindowOracle01', () => {
     it('gas for first update (allocates empty array)', async () => {
       const tx = await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const receipt = await tx.wait()
-      expect(receipt.gasUsed).to.eq('117006')
+      expect(receipt.gasUsed).to.eq('137951')
     }).retries(2) // gas test inconsistent
 
     it('gas for second update in the same period (skips)', async () => {
       await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const tx = await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const receipt = await tx.wait()
-      expect(receipt.gasUsed).to.eq('25566')
+      expect(receipt.gasUsed).to.eq('25588')
     }).retries(2) // gas test inconsistent
 
     it('gas for second update different period (no allocate, no skip)', async () => {
@@ -147,7 +147,7 @@ describe('DailySlidingWindowOracle01', () => {
       await mineBlock(provider, startTime + 3600)
       const tx = await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const receipt = await tx.wait()
-      expect(receipt.gasUsed).to.eq('95037')
+      expect(receipt.gasUsed).to.eq('100982')
     }).retries(2) // gas test inconsistent
 
     it('second update in one timeslot does not overwrite', async () => {
@@ -177,16 +177,24 @@ describe('DailySlidingWindowOracle01', () => {
     // must come after setting time to 0 for correct cumulative price computations in the pair
     beforeEach('add default liquidity', () => addLiquidity())
 
-    it('fails if previous bucket not set', async () => {
-      await slidingWindowOracle.update(token0.address, token1.address, overrides)
+    it('fails if previous bucket nor fallback set', async () => {
       expect(await slidingWindowOracle.canConsult(token0.address, token1.address)).to.be.false
-      await expect(slidingWindowOracle.consult(token0.address, 0, token1.address)).to.be.revertedWith(
+      await expect(slidingWindowOracle.consult(token0.address, 100, token1.address)).to.be.revertedWith(
         'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION'
       )
     })
 
+    it('falls back to latest observation if previous bucket not set', async () => {
+      expect(await slidingWindowOracle.canConsult(token0.address, token1.address)).to.be.false
+      await expect(slidingWindowOracle.consult(token0.address, 100, token1.address)).to.be.revertedWith(
+        'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION'
+      )
+      await slidingWindowOracle.update(token0.address, token1.address, overrides)
+      expect(await slidingWindowOracle.canConsult(token0.address, token1.address)).to.be.true
+    })
+
     it('fails for invalid pair', async () => {
-      await expect(slidingWindowOracle.consult(weth.address, 0, token1.address)).to.be.reverted
+      await expect(slidingWindowOracle.consult(weth.address, 100, token1.address)).to.be.reverted
     })
 
     describe('happy path', () => {
@@ -270,6 +278,26 @@ describe('DailySlidingWindowOracle01', () => {
         it('provides the correct ratio in consult token1', async () => {
           // price should be greater than 1
           expect(await slidingWindowOracle.consult(token1.address, 100, token0.address)).to.eq(200)
+        })
+      })
+
+      describe('hour 57:fallback', () => {
+        it('provides the correct ratio in consult token0 using fallback', async () => {
+          await mineBlock(provider, startTime + (9 + 48) * hour)
+
+          // at hour 23, price of token 0 spent 3 hours at 2, 3 hours at 1, 17 hours at 0.5 so price should
+          // be less than 1
+          expect(await slidingWindowOracle.consult(token0.address, 100, token1.address)).to.eq(50)
+        })
+
+        it('fails providing the correct ratio in consult token0 using fallback', async () => {
+          await mineBlock(provider, startTime + (9 + 48) * hour + 10) // +10 seconds, we're strict!
+
+          // at hour 23, price of token 0 spent 3 hours at 2, 3 hours at 1, 17 hours at 0.5 so price should
+          // be less than 1
+          await expect(slidingWindowOracle.consult(token0.address, 100, token1.address)).to.be.revertedWith(
+            'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION'
+          )
         })
       })
     })

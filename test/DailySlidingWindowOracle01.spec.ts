@@ -132,14 +132,14 @@ describe('DailySlidingWindowOracle01', () => {
     it('gas for first update (allocates empty array)', async () => {
       const tx = await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const receipt = await tx.wait()
-      expect(receipt.gasUsed).to.eq('137951')
+      expect(receipt.gasUsed).to.eq('117006')
     }).retries(2) // gas test inconsistent
 
     it('gas for second update in the same period (skips)', async () => {
       await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const tx = await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const receipt = await tx.wait()
-      expect(receipt.gasUsed).to.eq('25588')
+      expect(receipt.gasUsed).to.eq('25566')
     }).retries(2) // gas test inconsistent
 
     it('gas for second update different period (no allocate, no skip)', async () => {
@@ -147,7 +147,7 @@ describe('DailySlidingWindowOracle01', () => {
       await mineBlock(provider, startTime + 3600)
       const tx = await slidingWindowOracle.update(token0.address, token1.address, overrides)
       const receipt = await tx.wait()
-      expect(receipt.gasUsed).to.eq('100982')
+      expect(receipt.gasUsed).to.eq('95037')
     }).retries(2) // gas test inconsistent
 
     it('second update in one timeslot does not overwrite', async () => {
@@ -184,7 +184,7 @@ describe('DailySlidingWindowOracle01', () => {
       )
     })
 
-    it('falls back to latest observation if previous bucket not set', async () => {
+    it('falls back to oldest observation w/in 48h if previous bucket not set', async () => {
       expect(await slidingWindowOracle.canConsult(token0.address, token1.address)).to.be.false
       await expect(slidingWindowOracle.consult(token0.address, 100, token1.address)).to.be.revertedWith(
         'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION'

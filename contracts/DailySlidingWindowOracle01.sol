@@ -29,7 +29,7 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
     uint256 public constant windowSize = 86400; // 1 day
 
     // the desired amount of time over which the moving average should be computed, e.g. 48 hours
-    uint256 public constant fallbackWindowSize = 86400 * 2; // 2 days
+    uint256 public constant fallbackWindowSize = 172800; // 2 days
 
     // the number of observations stored for each pair, i.e. how many price observations are stored for the window.
     // as granularity increases from 1, more frequent updates are needed, but moving averages become more precise.
@@ -45,9 +45,6 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
 
     // mapping from pair address to a list of price observations of that pair
     mapping(address => Observation[]) public pairObservations;
-
-    // mapping from pair address the index of the last observation of that pair
-    mapping(address => uint8) public pairFallbackObservationIndex;
 
     constructor(address factory_) public {
         require(
@@ -71,16 +68,34 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
         firstObservation = pairObservations[pair][firstObservationIndex];
     }
 
+    // get fallback index with a +1 offset (where 0 means missing)
+    function getFallbackObservationOffsetIndex(address pair) private view returns (uint8 offsetIndex) {
+        uint256 referenceTimestamp = block.timestamp;
+        uint256 boundaryTimestamp = block.timestamp - fallbackWindowSize; // e.g. 48 hours ago max 
+
+        for (uint256 i = 0; i < pairObservations[pair].length; i++) {
+            uint256 timestamp = pairObservations[pair][i].timestamp;
+
+            // passed less than `fallbackWindowSize` since the observation and
+            // observation is older than the one set (or being the first one)
+            if (timestamp >= boundaryTimestamp && timestamp <= referenceTimestamp) {
+                referenceTimestamp = timestamp;
+                offsetIndex = uint8(i + 1); // keep the offset...
+            }
+        }
+    }
+
     function hasFallbackObservation(address pair) private view returns (bool) {
-        return pairFallbackObservationIndex[pair] > 0;
+        return getFallbackObservationOffsetIndex(pair) > 0;
     }
 
     // returns fallback observation for a pair (the last observation)
     function getFallbackObservation(address pair) private view returns (Observation storage fallbackObservation) {
-        require(hasFallbackObservation(pair), 'SlidingWindowOracle: MISSING_FALLBACK_OBSERVATION');
+        uint8 offsetIndex = getFallbackObservationOffsetIndex(pair);
+        require(offsetIndex > 0, 'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION');
 
         // take in consideration the +1 offset, never underflows...
-        fallbackObservation = pairObservations[pair][pairFallbackObservationIndex[pair] - 1];
+        fallbackObservation = pairObservations[pair][offsetIndex - 1];
     }
 
     // update the cumulative price for the observation at the current timestamp. each observation is updated at most
@@ -104,8 +119,6 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
             observation.timestamp = block.timestamp;
             observation.price0Cumulative = price0Cumulative;
             observation.price1Cumulative = price1Cumulative;
-            // keep the +1 offset so that the 0 index will serve as an indicator that there was no observation at all
-            pairFallbackObservationIndex[pair] = observationIndex + 1;
         }
     }
 
@@ -131,18 +144,7 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
         Observation storage firstObservation = getFirstObservationInWindow(pair);
         uint256 timeElapsed = block.timestamp - firstObservation.timestamp;
 
-        if (timeElapsed <= windowSize) {
-            return true;
-        }
-        
-        if (hasFallbackObservation(pair)) {
-            Observation storage fallbackObservation = getFallbackObservation(pair);
-            uint256 timeElapsedSinceLastObservation = block.timestamp - fallbackObservation.timestamp;
-
-            return timeElapsedSinceLastObservation <= fallbackWindowSize;
-        }
-
-        return false;
+        return timeElapsed <= windowSize || hasFallbackObservation(pair);
     }
 
     // returns the amount out corresponding to the amount in for a given token using the moving average over the time
@@ -162,7 +164,7 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
         Observation storage firstObservation = getFirstObservationInWindow(pair);
         uint256 timeElapsed = block.timestamp - firstObservation.timestamp;
 
-        if (timeElapsed > _windowSize && hasFallbackObservation(pair)) {
+        if (timeElapsed > _windowSize) {
             firstObservation = getFallbackObservation(pair);
             timeElapsed = block.timestamp - firstObservation.timestamp;
             _windowSize = fallbackWindowSize;

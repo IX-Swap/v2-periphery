@@ -73,7 +73,7 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
   const routerEventEmitter = await deployContract(wallet, RouterEventEmitter, [], overrides)
 
   // initialize V2
-  await factoryV2.createPair(tokenA.address, tokenB.address)
+  await factoryV2.createPair(tokenA.address, tokenB.address, false)
   const pairAddress = await factoryV2.getPair(tokenA.address, tokenB.address)
   const pair = new Contract(pairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
   const token0Address = await pair.token0()
@@ -81,14 +81,14 @@ export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Pro
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
 
   // initialize sec pair
-  await factoryV2.createPair(tokenA.address, wsecToken.address)
+  await factoryV2.createPair(tokenA.address, wsecToken.address, false)
   const wsecPairAddress = await factoryV2.getPair(tokenA.address, wsecToken.address)
   const secPair = new Contract(wsecPairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
   const token0secAddress = await secPair.token0()
   const token0sec = tokenA.address === token0secAddress ? tokenA : wsecToken
   const token1sec = tokenA.address === token0secAddress ? wsecToken : tokenA
 
-  await factoryV2.createPair(WETH.address, WETHPartner.address)
+  await factoryV2.createPair(WETH.address, WETHPartner.address, false)
   const WETHPairAddress = await factoryV2.getPair(WETH.address, WETHPartner.address)
   const WETHPair = new Contract(WETHPairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
 

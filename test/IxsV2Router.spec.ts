@@ -110,6 +110,7 @@ describe('IxsV2Router', () => {
       0,
       wallet.address,
       MaxUint256,
+      false,
       overrides
     )
 
@@ -133,6 +134,7 @@ describe('IxsV2Router', () => {
       0,
       wallet.address,
       MaxUint256,
+      false,
       overrides
     )
 
@@ -169,7 +171,7 @@ describe('fee-on-transfer tokens', () => {
     DTT = await deployContract(wallet, DeflatingERC20, [TOTAL_SUPPLY])
 
     // make a DTT<>WETH pair
-    await fixture.factoryV2.createPair(DTT.address, WETH.address)
+    await fixture.factoryV2.createPair(DTT.address, WETH.address, false)
     const pairAddress = await fixture.factoryV2.getPair(DTT.address, WETH.address)
     pair = new Contract(pairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
   })
@@ -180,7 +182,7 @@ describe('fee-on-transfer tokens', () => {
 
   async function addLiquidity(DTTAmount: BigNumber, WETHAmount: BigNumber) {
     await DTT.approve(liquidityRouter.address, MaxUint256)
-    await liquidityRouter.addLiquidityETH(DTT.address, DTTAmount, DTTAmount, WETHAmount, wallet.address, MaxUint256, {
+    await liquidityRouter.addLiquidityETH(DTT.address, DTTAmount, DTTAmount, WETHAmount, wallet.address, MaxUint256, false, {
       ...overrides,
       value: WETHAmount
     })
@@ -374,7 +376,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
     DTT2 = await deployContract(wallet, DeflatingERC20, [TOTAL_SUPPLY])
 
     // make a DTT<>WETH pair
-    await factoryV2.createPair(DTT.address, DTT2.address)
+    await factoryV2.createPair(DTT.address, DTT2.address, false)
   })
 
   afterEach(async function () {
@@ -393,6 +395,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
       DTT2Amount,
       wallet.address,
       MaxUint256,
+      false,
       overrides
     )
   }
@@ -453,6 +456,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
         SEC1Amount,
         wallet.address,
         MaxUint256,
+        false,
         overrides
       )
 
@@ -521,7 +525,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
       await WLINK.mint(wallet.address, TOTAL_SUPPLY)
 
       // make a DAI<>wLink2 pair
-      await factoryV2.createPair(DAI.address, WLINK.address)
+      await factoryV2.createPair(DAI.address, WLINK.address, false)
 
       const deadline = MaxUint256
       const nonce = await WLINK.swapNonces(wallet.address)
@@ -552,7 +556,8 @@ describe('fee-on-transfer tokens: reloaded', () => {
         0,
         0,
         wallet.address,
-        MaxUint256
+        MaxUint256,
+        false
       )
 
       await DAI.approve(swapRouter.address, MaxUint256)
@@ -587,10 +592,10 @@ describe('fee-on-transfer tokens: reloaded', () => {
       await WLINK.mint(wallet.address, LIQUIDITY_AMOUNT.mul(2))
 
       // make a DAI<>wLink2 pair
-      await factoryV2.createPair(DAI.address, WLINK.address)
+      await factoryV2.createPair(DAI.address, WLINK.address, false)
 
       // make a wLink2<>WETH pair
-      await factoryV2.createPair(WLINK.address, WETH.address)
+      await factoryV2.createPair(WLINK.address, WETH.address, false)
 
       const deadline = MaxUint256
       const nonce = await WLINK.swapNonces(wallet.address)
@@ -638,7 +643,8 @@ describe('fee-on-transfer tokens: reloaded', () => {
         0,
         0,
         wallet.address,
-        MaxUint256
+        MaxUint256,
+        false
       )
 
       // add wLink2<>WETH liquitity
@@ -650,7 +656,8 @@ describe('fee-on-transfer tokens: reloaded', () => {
         0,
         0,
         wallet.address,
-        MaxUint256
+        MaxUint256,
+        false
       )
 
       await DAI.approve(swapRouter.address, MaxUint256)

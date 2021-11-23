@@ -142,7 +142,7 @@ async function getSwapDigest(
   await WLINK.mint(WALLET_ADDRESS, TOTAL_SUPPLY, { from: OPERATOR_ADDRESS })
 
   console.log('>>>> create DAI<>WLINK pair')
-  await factory.createPair(DAI.address, WLINK.address, { from: WALLET_ADDRESS })
+  await factory.createPair(DAI.address, WLINK.address, false, { from: WALLET_ADDRESS })
 
   console.log('>>>> allow liquidityRouter spending DAI and WLINK')
   await DAI.approve(LIQUIDITY_ROUTER_ADDRESS, MaxUint256, { from: WALLET_ADDRESS })
@@ -158,6 +158,7 @@ async function getSwapDigest(
     0,
     WALLET_ADDRESS,
     MaxUint256,
+    false,
     { from: WALLET_ADDRESS }
   )
 

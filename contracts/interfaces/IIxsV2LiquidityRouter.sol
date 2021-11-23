@@ -9,7 +9,8 @@ interface IIxsV2LiquidityRouter {
         uint256 amountAMin,
         uint256 amountBMin,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        bool forceEnableMitigation
     )
         external
         returns (
@@ -24,7 +25,8 @@ interface IIxsV2LiquidityRouter {
         uint256 amountTokenMin,
         uint256 amountETHMin,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        bool forceEnableMitigation
     )
         external
         payable

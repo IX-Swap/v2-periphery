@@ -98,7 +98,7 @@ module.exports = async function(deployer, network, accounts) {
     await erc20.approve(liquidityRouter.address, TEST_SUPPLY);
 
     console.info('> liquidityRouter->addLiquidityETH [TT<>WETH9]');
-    await liquidityRouter.addLiquidityETH(erc20.address, TEST_SUPPLY, TEST_SUPPLY, TEST_ETH, RECEIVER, DEADLINE, {
+    await liquidityRouter.addLiquidityETH(erc20.address, TEST_SUPPLY, TEST_SUPPLY, TEST_ETH, RECEIVER, DEADLINE, false, {
       value: TEST_ETH
     });
 

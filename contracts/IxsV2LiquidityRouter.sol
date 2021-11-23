@@ -38,11 +38,12 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
         uint256 amountADesired,
         uint256 amountBDesired,
         uint256 amountAMin,
-        uint256 amountBMin
+        uint256 amountBMin,
+        bool forceEnableMitigation
     ) internal virtual returns (uint256 amountA, uint256 amountB) {
         // create the pair if it doesn't exist yet
         if (IIxsV2Factory(factory).getPair(tokenA, tokenB) == address(0)) {
-            IIxsV2Factory(factory).createPair(tokenA, tokenB);
+            IIxsV2Factory(factory).createPair(tokenA, tokenB, forceEnableMitigation);
         }
         (uint256 reserveA, uint256 reserveB) = IxsV2Library.getReserves(factory, tokenA, tokenB);
         if (reserveA == 0 && reserveB == 0) {
@@ -69,7 +70,8 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
         uint256 amountAMin,
         uint256 amountBMin,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        bool forceEnableMitigation
     )
         external
         virtual
@@ -81,7 +83,7 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
             uint256 liquidity
         )
     {
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
+        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin, forceEnableMitigation);
         address pair = IxsV2Library.pairFor(factory, tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
@@ -94,7 +96,8 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
         uint256 amountTokenMin,
         uint256 amountETHMin,
         address to,
-        uint256 deadline
+        uint256 deadline,
+        bool forceEnableMitigation
     )
         external
         payable
@@ -113,7 +116,8 @@ contract IxsV2LiquidityRouter is IIxsV2LiquidityRouter, IIxsV2Router {
             amountTokenDesired,
             msg.value,
             amountTokenMin,
-            amountETHMin
+            amountETHMin,
+            forceEnableMitigation
         );
         address pair = IxsV2Library.pairFor(factory, token, WETH);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);

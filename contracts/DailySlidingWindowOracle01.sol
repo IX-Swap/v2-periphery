@@ -78,7 +78,8 @@ contract DailySlidingWindowOracle01 is IIxsOracle {
 
             // passed less than `fallbackWindowSize` since the observation and
             // observation is older than the one set (or being the first one)
-            if (timestamp >= boundaryTimestamp && timestamp <= referenceTimestamp) {
+            // `timestamp < referenceTimestamp` (not equal) - to avoid division by zero on amount out calc/s
+            if (timestamp >= boundaryTimestamp && timestamp < referenceTimestamp) {
                 referenceTimestamp = timestamp;
                 offsetIndex = uint8(i + 1); // keep the offset...
             }

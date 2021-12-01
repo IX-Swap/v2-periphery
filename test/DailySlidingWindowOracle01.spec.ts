@@ -190,6 +190,7 @@ describe('DailySlidingWindowOracle01', () => {
         'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION'
       )
       await slidingWindowOracle.update(token0.address, token1.address, overrides)
+      await mineBlock(provider, startTime + 15) // mine a bock
       expect(await slidingWindowOracle.canConsult(token0.address, token1.address)).to.be.true
     })
 

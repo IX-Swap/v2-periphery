@@ -35,7 +35,7 @@ module.exports = {
             networkCheckTimeout: 10000000,
             timeoutBlocks: 200,
             skipDryRun: true,
-            gasPrice: 1000000000, // 1 gwei
+            gasPrice: 10000000000, // 10 gwei
         },
         prod: {
             provider: () => provider('mainnet'),

@@ -1,4 +1,4 @@
-pragma solidity >=0.6.2;
+pragma solidity =0.6.6;
 pragma experimental ABIEncoderV2;
 
 import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';

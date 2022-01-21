@@ -1,4 +1,4 @@
-pragma solidity >=0.5.0;
+pragma solidity >=0.5.16 <=0.6.6;
 
 import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
 
@@ -28,7 +28,7 @@ library IxsV2Library {
                         hex'ff',
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex'b5bad4e7a4724d0ac1eba89ffae6664ca1040ebbf827d4d137891051685b4596' // init code hash, ref: sdk/src/constants.ts#6
+                        hex'1041b70e515ac87fb2b62ca07d73429c08c150ef73420251a2789ef04460a382' // init code hash, ref: sdk/src/constants.ts#6
                     )
                 )
             )

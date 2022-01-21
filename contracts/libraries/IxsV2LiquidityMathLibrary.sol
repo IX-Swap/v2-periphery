@@ -1,4 +1,4 @@
-pragma solidity >=0.5.0;
+pragma solidity >=0.5.16 <=0.6.6;
 
 import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Pair.sol';
 import '@ixswap1/v2-core/contracts/interfaces/IIxsV2Factory.sol';

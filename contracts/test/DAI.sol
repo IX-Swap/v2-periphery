@@ -2,11 +2,11 @@ pragma solidity =0.6.6;
 
 import '../libraries/SafeMath.sol';
 
-contract DeflatingERC20 {
+contract DAI {
     using SafeMath for uint256;
 
-    string public constant name = 'Deflating Test Token';
-    string public constant symbol = 'DTT';
+    string public constant name = 'Dai Stablecoin';
+    string public constant symbol = 'DAI';
     uint8 public constant decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
@@ -63,12 +63,9 @@ contract DeflatingERC20 {
         address to,
         uint256 value
     ) private {
-        uint256 burnAmount = value / 100;
-        _burn(from, burnAmount);
-        uint256 transferAmount = value.sub(burnAmount);
-        balanceOf[from] = balanceOf[from].sub(transferAmount);
-        balanceOf[to] = balanceOf[to].add(transferAmount);
-        emit Transfer(from, to, transferAmount);
+        balanceOf[from] = balanceOf[from].sub(value);
+        balanceOf[to] = balanceOf[to].add(value);
+        emit Transfer(from, to, value);
     }
 
     function approve(address spender, uint256 value) external returns (bool) {

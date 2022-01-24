@@ -4,16 +4,17 @@ import { deployContract } from 'ethereum-waffle'
 
 import { expandTo18Decimals } from './utilities'
 
-import UniswapV2Factory from '@uniswap/v2-core/build/UniswapV2Factory.json'
-import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
+import PairBytecodeProvider from '@ixswap1/v2-core/build/PairBytecodeProvider.json'
+import IxsV2Factory from '@ixswap1/v2-core/build/IxsV2Factory.json'
+import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
+import IxsWSecFactory from '@ixswap1/v2-core/build/IxsWSecFactory.json'
+import IxsWSec from '@ixswap1/v2-core/build/IxsWSec.json'
 
 import ERC20 from '../../build/ERC20.json'
 import WETH9 from '../../build/WETH9.json'
-import UniswapV1Exchange from '../../build/UniswapV1Exchange.json'
-import UniswapV1Factory from '../../build/UniswapV1Factory.json'
-import UniswapV2Router01 from '../../build/UniswapV2Router01.json'
-import UniswapV2Migrator from '../../build/UniswapV2Migrator.json'
-import UniswapV2Router02 from '../../build/UniswapV2Router02.json'
+import IxsV2LiquidityRouter from '../../build/IxsV2LiquidityRouter.json'
+import IxsV2SwapRouter from '../../build/IxsV2SwapRouter.json'
+import DailySlidingWindowOracle01 from '../../build/DailySlidingWindowOracle01.json'
 import RouterEventEmitter from '../../build/RouterEventEmitter.json'
 
 const overrides = {
@@ -23,78 +24,90 @@ const overrides = {
 interface V2Fixture {
   token0: Contract
   token1: Contract
+  wsecToken: Contract
+  token0sec: Contract
+  token1sec: Contract
   WETH: Contract
   WETHPartner: Contract
-  factoryV1: Contract
+  pairBytecodeProvider: Contract
   factoryV2: Contract
-  router01: Contract
-  router02: Contract
+  wSecFactory: Contract
   routerEventEmitter: Contract
-  router: Contract
-  migrator: Contract
-  WETHExchangeV1: Contract
+  liquidityRouter: Contract
+  swapRouter: Contract
   pair: Contract
+  secPair: Contract
   WETHPair: Contract
 }
 
 export async function v2Fixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<V2Fixture> {
   // deploy tokens
-  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-  const WETH = await deployContract(wallet, WETH9)
-  const WETHPartner = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-
-  // deploy V1
-  const factoryV1 = await deployContract(wallet, UniswapV1Factory, [])
-  await factoryV1.initializeFactory((await deployContract(wallet, UniswapV1Exchange, [])).address)
+  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
+  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
+  const WETH = await deployContract(wallet, WETH9, [], overrides)
+  const WETHPartner = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
 
   // deploy V2
-  const factoryV2 = await deployContract(wallet, UniswapV2Factory, [wallet.address])
+  const pairBytecodeProvider = await deployContract(wallet, PairBytecodeProvider, [], overrides)
+  const factoryV2 = await deployContract(wallet, IxsV2Factory, [wallet.address, pairBytecodeProvider.address], overrides)
+
+  // deploy oracle
+  const oracle = await deployContract(wallet, DailySlidingWindowOracle01, [factoryV2.address], overrides)
+  await factoryV2.setOracle(oracle.address, '0x0000000000000000000000000000000000000000000000000000000000000000')
+  
+  // deploy wsec factory
+  const wSecFactory = await deployContract(wallet, IxsWSecFactory, [factoryV2.address, [wallet.address]], overrides)
+  await factoryV2.setWSecFactory(wSecFactory.address); // back ref
+
+  // deploy wrapped security
+  await wSecFactory.createWSec('Tesla Equity', 'SEC', 18)
+  const { wSec: wsecTokenAddress } = await wSecFactory.getWSecUnpacked('Tesla Equity', 'SEC', 18)
+  const wsecToken = new Contract(wsecTokenAddress, JSON.stringify(IxsWSec.abi), provider).connect(wallet)
+  await wsecToken.mint(wallet.address, expandTo18Decimals(10000))
 
   // deploy routers
-  const router01 = await deployContract(wallet, UniswapV2Router01, [factoryV2.address, WETH.address], overrides)
-  const router02 = await deployContract(wallet, UniswapV2Router02, [factoryV2.address, WETH.address], overrides)
+  const liquidityRouter = await deployContract(wallet, IxsV2LiquidityRouter, [factoryV2.address, WETH.address], overrides)
+  const swapRouter = await deployContract(wallet, IxsV2SwapRouter, [factoryV2.address, WETH.address], overrides)
 
   // event emitter for testing
-  const routerEventEmitter = await deployContract(wallet, RouterEventEmitter, [])
-
-  // deploy migrator
-  const migrator = await deployContract(wallet, UniswapV2Migrator, [factoryV1.address, router01.address], overrides)
-
-  // initialize V1
-  await factoryV1.createExchange(WETHPartner.address, overrides)
-  const WETHExchangeV1Address = await factoryV1.getExchange(WETHPartner.address)
-  const WETHExchangeV1 = new Contract(WETHExchangeV1Address, JSON.stringify(UniswapV1Exchange.abi), provider).connect(
-    wallet
-  )
+  const routerEventEmitter = await deployContract(wallet, RouterEventEmitter, [], overrides)
 
   // initialize V2
-  await factoryV2.createPair(tokenA.address, tokenB.address)
+  await factoryV2.createPair(tokenA.address, tokenB.address, false)
   const pairAddress = await factoryV2.getPair(tokenA.address, tokenB.address)
-  const pair = new Contract(pairAddress, JSON.stringify(IUniswapV2Pair.abi), provider).connect(wallet)
-
+  const pair = new Contract(pairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
   const token0Address = await pair.token0()
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
 
-  await factoryV2.createPair(WETH.address, WETHPartner.address)
+  // initialize sec pair
+  await factoryV2.createPair(tokenA.address, wsecToken.address, false)
+  const wsecPairAddress = await factoryV2.getPair(tokenA.address, wsecToken.address)
+  const secPair = new Contract(wsecPairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
+  const token0secAddress = await secPair.token0()
+  const token0sec = tokenA.address === token0secAddress ? tokenA : wsecToken
+  const token1sec = tokenA.address === token0secAddress ? wsecToken : tokenA
+
+  await factoryV2.createPair(WETH.address, WETHPartner.address, false)
   const WETHPairAddress = await factoryV2.getPair(WETH.address, WETHPartner.address)
-  const WETHPair = new Contract(WETHPairAddress, JSON.stringify(IUniswapV2Pair.abi), provider).connect(wallet)
+  const WETHPair = new Contract(WETHPairAddress, JSON.stringify(IIxsV2Pair.abi), provider).connect(wallet)
 
   return {
     token0,
     token1,
+    token0sec,
+    token1sec,
+    wsecToken,
     WETH,
     WETHPartner,
-    factoryV1,
+    pairBytecodeProvider,
     factoryV2,
-    router01,
-    router02,
-    router: router02, // the default router, 01 had a minor bug
+    wSecFactory,
+    liquidityRouter,
+    swapRouter,
     routerEventEmitter,
-    migrator,
-    WETHExchangeV1,
     pair,
+    secPair,
     WETHPair
   }
 }

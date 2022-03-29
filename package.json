@@ -47,6 +47,7 @@
     "deploy-dev": "if [ ! -z $WSL_DISTRO_NAME ]; then export WSL_HOST=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'); fi; yarn truffle migrate --compile-none --network dev",
     "deploy-stage": "yarn truffle migrate --compile-none --network stage",
     "deploy-prod": "yarn truffle migrate --compile-none --network prod",
+    "deploy-polygon": "yarn truffle migrate --compile-none --network polygon",
     "test-sec-swap-kovan": "node test/validate-sec-swap-kovan.js"
   },
   "license": "GPL-3.0-or-later"

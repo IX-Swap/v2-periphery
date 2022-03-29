@@ -24,4 +24,14 @@ module.exports = {
         // for WETH9 known implementations consult: sdk-core/src/entities/weth9.ts
         // should be the same as: subgraph/src/mappings/pricing.ts (WETH_ADDRESS)
     },
+    polygon: {
+        FACTORY_ADDRESS:  '', // IXS FactoryV2 deployment address
+        TEST: false, // test LP creation
+        /**
+         * DO NOT CHANGE UNLESS YOU KNOW WHAT YOU DO!
+         */
+        WETH_ADDRESS: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', // WMATIC deployment address (mainnet)
+        // for WETH9 known implementations consult: sdk-core/src/entities/weth9.ts
+        // should be the same as: subgraph/src/mappings/pricing.ts (WETH_ADDRESS)
+    },
 };

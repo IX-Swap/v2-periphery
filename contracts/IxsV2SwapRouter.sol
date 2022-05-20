@@ -82,20 +82,12 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
         {
             // avoid stack to deep error
-            address _path0 = path[0];
-            address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountIn = amountIn;
-            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsOut(
                 factory,
                 _amountIn,
-                _path,
-                _bool2ArrayToDynamic(
-                    _token0 == _path0
-                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
-                        : [pair.isToken1Sec(), pair.isToken0Sec()]
-                )
+                _path
             );
             require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         }
@@ -114,20 +106,12 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
         {
             // avoid stack to deep error
-            address _path0 = path[0];
-            address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountOut = amountOut;
-            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsIn(
                 factory,
                 _amountOut,
-                _path,
-                _bool2ArrayToDynamic(
-                    _token0 == _path0
-                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
-                        : [pair.isToken1Sec(), pair.isToken0Sec()]
-                )
+                _path
             );
             require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         }
@@ -146,19 +130,11 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
         {
             // avoid stack to deep error
-            address _path0 = path[0];
-            address _path1 = path[1];
             address[] memory _path = path;
-            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsOut(
                 factory,
                 msg.value,
-                _path,
-                _bool2ArrayToDynamic(
-                    _token0 == _path0
-                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
-                        : [pair.isToken1Sec(), pair.isToken0Sec()]
-                )
+                _path
             );
             require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         }
@@ -179,20 +155,12 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
         {
             // avoid stack to deep error
-            address _path0 = path[0];
-            address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountOut = amountOut;
-            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsIn(
                 factory,
                 _amountOut,
-                _path,
-                _bool2ArrayToDynamic(
-                    _token0 == _path0
-                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
-                        : [pair.isToken1Sec(), pair.isToken0Sec()]
-                )
+                _path
             );
             require(amounts[0] <= amountInMax, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         }
@@ -214,20 +182,12 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
         {
             // avoid stack to deep error
-            address _path0 = path[0];
-            address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountIn = amountIn;
-            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsOut(
                 factory,
                 _amountIn,
-                _path,
-                _bool2ArrayToDynamic(
-                    _token0 == _path0
-                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
-                        : [pair.isToken1Sec(), pair.isToken0Sec()]
-                )
+                _path
             );
             require(amounts[amounts.length - 1] >= amountOutMin, 'IxsV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         }
@@ -248,20 +208,12 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
         IIxsV2Pair pair = IIxsV2Pair(IxsV2Library.pairFor(factory, path[0], path[1]));
         {
             // avoid stack to deep error
-            address _path0 = path[0];
-            address _path1 = path[1];
             address[] memory _path = path;
             uint256 _amountOut = amountOut;
-            (address _token0, ) = IxsV2Library.sortTokens(_path0, _path1);
             amounts = IxsV2Library.getAmountsIn(
                 factory,
                 _amountOut,
-                _path,
-                _bool2ArrayToDynamic(
-                    _token0 == _path0
-                        ? [pair.isToken0Sec(), pair.isToken1Sec()]
-                        : [pair.isToken1Sec(), pair.isToken0Sec()]
-                )
+                _path
             );
             require(amounts[0] <= msg.value, 'IxsV2Router: EXCESSIVE_INPUT_AMOUNT');
         }
@@ -418,24 +370,16 @@ contract IxsV2SwapRouter is IIxsV2SwapRouter, IIxsV2Router {
 
     function getAmountsOut(
         uint256 amountIn,
-        address[] memory path,
-        bool[] memory secPath
+        address[] memory path
     ) public view virtual override returns (uint256[] memory amounts) {
-        return IxsV2Library.getAmountsOut(factory, amountIn, path, secPath);
+        return IxsV2Library.getAmountsOut(factory, amountIn, path);
     }
 
     function getAmountsIn(
         uint256 amountOut,
-        address[] memory path,
-        bool[] memory secPath
+        address[] memory path
     ) public view virtual override returns (uint256[] memory amounts) {
-        return IxsV2Library.getAmountsIn(factory, amountOut, path, secPath);
-    }
-
-    function _bool2ArrayToDynamic(bool[2] memory arr) internal pure returns (bool[] memory dynarr) {
-        dynarr = new bool[](2);
-        dynarr[0] = arr[0];
-        dynarr[1] = arr[1];
+        return IxsV2Library.getAmountsIn(factory, amountOut, path);
     }
 
     function _authStruct2ArrayToDynamic(IIxsV2Pair.SecAuthorization[2] memory arr)

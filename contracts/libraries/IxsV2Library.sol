@@ -35,6 +35,15 @@ library IxsV2Library {
         );
     }
 
+    // returns true if a liquidity pool contains sec token
+    function isSecPool(
+        address factory,
+        address tokenA,
+        address tokenB
+    ) internal view returns (bool isSecurityPool) {
+        isSecurityPool = IIxsV2Pair(pairFor(factory, tokenA, tokenB)).isSecurityPool();
+    }
+
     // fetches and sorts the reserves for a pair
     function getReserves(
         address factory,
@@ -90,16 +99,14 @@ library IxsV2Library {
     function getAmountsOut(
         address factory,
         uint256 amountIn,
-        address[] memory path,
-        bool[] memory secPath
+        address[] memory path
     ) internal view returns (uint256[] memory amounts) {
         require(path.length >= 2, 'IxsV2Library: INVALID_PATH');
-        require(secPath.length == path.length, 'IxsV2Library: INVALID_SEC_PATH');
         amounts = new uint256[](path.length);
         amounts[0] = amountIn;
         for (uint256 i; i < path.length - 1; i++) {
             (uint256 reserveIn, uint256 reserveOut) = getReserves(factory, path[i], path[i + 1]);
-            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, secPath[i] || secPath[i + 1]);
+            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, isSecPool(factory, path[i], path[i+1]));
         }
     }
 
@@ -107,16 +114,14 @@ library IxsV2Library {
     function getAmountsIn(
         address factory,
         uint256 amountOut,
-        address[] memory path,
-        bool[] memory secPath
+        address[] memory path
     ) internal view returns (uint256[] memory amounts) {
         require(path.length >= 2, 'IxsV2Library: INVALID_PATH');
-        require(secPath.length == path.length, 'IxsV2Library: INVALID_SEC_PATH');
         amounts = new uint256[](path.length);
         amounts[amounts.length - 1] = amountOut;
         for (uint256 i = path.length - 1; i > 0; i--) {
             (uint256 reserveIn, uint256 reserveOut) = getReserves(factory, path[i - 1], path[i]);
-            amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut, secPath[i - 1] || secPath[i]);
+            amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut, isSecPool(factory, path[i - 1], path[i]));
         }
     }
 }

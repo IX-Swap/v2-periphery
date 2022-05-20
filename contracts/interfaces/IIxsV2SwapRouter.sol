@@ -104,13 +104,11 @@ interface IIxsV2SwapRouter {
 
     function getAmountsOut(
         uint256 amountIn,
-        address[] calldata path,
-        bool[] calldata secPath
+        address[] calldata path
     ) external view returns (uint256[] memory amounts);
 
     function getAmountsIn(
         uint256 amountOut,
-        address[] calldata path,
-        bool[] calldata secPath
+        address[] calldata path
     ) external view returns (uint256[] memory amounts);
 }

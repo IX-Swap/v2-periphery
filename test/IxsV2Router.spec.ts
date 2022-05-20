@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai'
-import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
-import { Contract } from 'ethers'
+import { solidity, MockProvider, createFixtureLoader, deployContract, link } from 'ethereum-waffle'
+import { Contract, ethers } from 'ethers'
 import { BigNumber, bigNumberify, hexlify } from 'ethers/utils'
 import { MaxUint256 } from 'ethers/constants'
 import IIxsV2Pair from '@ixswap1/v2-core/build/IIxsV2Pair.json'
@@ -13,6 +13,7 @@ import DAIContract from '../build/DAI.json'
 import WETHContract from '../build/WETH9.json'
 import IxsWSec from '@ixswap1/v2-core/build/IxsWSec.json'
 import { ecsign } from 'ethereumjs-util'
+import { utils } from 'mocha'
 
 chai.use(solidity)
 
@@ -22,6 +23,58 @@ const overrides = {
 
 const TOTAL_SUPPLY = expandTo18Decimals(10000)
 const ZERO_AMOUNT = expandTo18Decimals(0)
+
+
+// async function createPoolsForMultihopSwaps(
+//     signer:any, 
+//     tokens:any 
+// ) {
+//   const LIQUIDITY_AMOUNT = expandTo18Decimals(1000)
+
+  
+//   for(let i = 0; i < tokens.length; i++) {
+
+//   }
+
+//   await WETH.deposit({ value: LIQUIDITY_AMOUNT.mul(2) }) // mint
+
+//   // make a DAI<>wLink2 pair
+//   await factoryV2.createPair(DAI.address, WETH.address, false)
+
+//   // make a wLink2<>WETH pair
+//   await factoryV2.createPair(USDC.address, WETH.address, false)
+
+//   await DAI.approve(liquidityRouter.address, MaxUint256)
+//   await WETH.approve(liquidityRouter.address, MaxUint256)
+//   await USDC.approve(liquidityRouter.address, MaxUint256)
+
+//   // add DAI<>wLink2 liquitity
+//   await liquidityRouter.addLiquidity(
+//     DAI.address,
+//     WETH.address,
+//     LIQUIDITY_AMOUNT,
+//     LIQUIDITY_AMOUNT,
+//     0,
+//     0,
+//     wallet.address,
+//     MaxUint256,
+//     false
+//   )
+
+//   // add wLink2<>WETH liquitity
+//   await liquidityRouter.addLiquidity(
+//     USDC.address,
+//     WETH.address,
+//     LIQUIDITY_AMOUNT,
+//     LIQUIDITY_AMOUNT,
+//     0,
+//     0,
+//     wallet.address,
+//     MaxUint256,
+//     false
+//   )
+// }
+
 
 describe('IxsV2Router', () => {
   const provider = new MockProvider({
@@ -114,11 +167,11 @@ describe('IxsV2Router', () => {
       overrides
     )
 
-    await expect(swapRouter.getAmountsOut(bigNumberify(2), [token0.address], [false])).to.be.revertedWith(
-      'IxsV2Library: INVALID_PATH'
-    )
+    // await expect(swapRouter.getAmountsOut(bigNumberify(2), [token0.address], [false])).to.be.revertedWith(
+    //   'IxsV2Library: INVALID_PATH'
+    // )
     const path = [token0.address, token1.address]
-    const amountsOut = await swapRouter.getAmountsOut(bigNumberify(2), path, [false, false])
+    const amountsOut = await swapRouter.getAmountsOut(bigNumberify(2), path)
     expect(amountsOut.map((x: any) => x.toString())).to.deep.eq([bigNumberify(2), bigNumberify(1)].map((x: any) => x.toString()))
   })
 
@@ -138,11 +191,11 @@ describe('IxsV2Router', () => {
       overrides
     )
 
-    await expect(swapRouter.getAmountsIn(bigNumberify(1), [token0.address], [false])).to.be.revertedWith(
-      'IxsV2Library: INVALID_PATH'
-    )
+    // await expect(swapRouter.getAmountsIn(bigNumberify(1), [token0.address], [false])).to.be.revertedWith(
+    //   'IxsV2Library: INVALID_PATH'
+    // )
     const path = [token0.address, token1.address]
-    const amountsIn = await swapRouter.getAmountsIn(bigNumberify(1), path, [false, false])
+    const amountsIn = await swapRouter.getAmountsIn(bigNumberify(1), path)
     expect(amountsIn.map((x: any) => x.toString())).to.deep.eq([bigNumberify(2), bigNumberify(1)].map((x: any) => x.toString()))
   })
 })
@@ -237,7 +290,7 @@ describe('fee-on-transfer tokens', () => {
     const NaiveDTTExpected = DTTInPair.mul(liquidity).div(totalSupply)
     const WETHExpected = WETHInPair.mul(liquidity).div(totalSupply)
 
-    await pair.approve(liquidityRouter.address, MaxUint256)
+    // await pair.approve(liquidityRouter.address, MaxUint256)
     await liquidityRouter.removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
       DTT.address,
       liquidity,
@@ -662,7 +715,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
 
       await DAI.approve(swapRouter.address, MaxUint256)
 
-      await swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+      await swapRouter.swapExactTokensForTokens(
         expandTo18Decimals(5),
         0,
         [DAI.address, WLINK.address, WETH.address],
@@ -672,7 +725,7 @@ describe('fee-on-transfer tokens: reloaded', () => {
         overrides
       )
       
-      await swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+      await swapRouter.swapExactTokensForTokens(
         expandTo18Decimals(5),
         0,
         [DAI.address, WLINK.address, WETH.address],
@@ -683,6 +736,235 @@ describe('fee-on-transfer tokens: reloaded', () => {
       )
 
       expect(await WETH.balanceOf(wallet.address)).to.eq('9611175416784232097')
+    })
+
+    it('DAI -> WETH -> USDC (multihop)', async () => {
+      const LIQUIDITY_AMOUNT = expandTo18Decimals(1000)
+
+      // deploy DAI
+      const DAI = await deployContract(wallet, DAIContract, [LIQUIDITY_AMOUNT.add(expandTo18Decimals(10))])
+
+      // deploy USDC
+      const USDC = await deployContract(wallet, DAIContract, [LIQUIDITY_AMOUNT.add(expandTo18Decimals(10))])
+
+      // deploy WETH
+      const WETH = await deployContract(wallet, WETHContract, [])
+      await WETH.deposit({ value: LIQUIDITY_AMOUNT.mul(2) }) // mint
+
+      // make a DAI<>wLink2 pair
+      await factoryV2.createPair(DAI.address, WETH.address, false)
+
+      // make a wLink2<>WETH pair
+      await factoryV2.createPair(USDC.address, WETH.address, false)
+
+      await DAI.approve(liquidityRouter.address, MaxUint256)
+      await WETH.approve(liquidityRouter.address, MaxUint256)
+      await USDC.approve(liquidityRouter.address, MaxUint256)
+
+      // add DAI<>wLink2 liquitity
+      await liquidityRouter.addLiquidity(
+        DAI.address,
+        WETH.address,
+        LIQUIDITY_AMOUNT,
+        LIQUIDITY_AMOUNT,
+        0,
+        0,
+        wallet.address,
+        MaxUint256,
+        false
+      )
+
+      // add wLink2<>WETH liquitity
+      await liquidityRouter.addLiquidity(
+        USDC.address,
+        WETH.address,
+        LIQUIDITY_AMOUNT,
+        LIQUIDITY_AMOUNT,
+        0,
+        0,
+        wallet.address,
+        MaxUint256,
+        false
+      )
+      let amountIn = expandTo18Decimals(5);
+      let path = [DAI.address, WETH.address, USDC.address]
+      await DAI.approve(swapRouter.address, MaxUint256)
+      await USDC.approve(swapRouter.address, MaxUint256)
+      let amountOut = (await swapRouter.getAmountsOut(amountIn, path))[path.length - 1]
+      let balanceBefore = await USDC.balanceOf(wallet.address)
+
+      await swapRouter.swapExactTokensForTokens(
+        expandTo18Decimals(5),
+        0,
+        path,
+        wallet.address,
+        MaxUint256,
+        [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG, EMPTY_SWAP_SIG],
+        overrides
+      )
+      expect(await USDC.balanceOf(wallet.address)).to.eq(balanceBefore.add(amountOut))
+
+      path = [USDC.address, WETH.address, DAI.address]
+      balanceBefore = await USDC.balanceOf(wallet.address)
+      amountIn = (await swapRouter.getAmountsIn(amountOut, path))[0]
+
+      await swapRouter.swapTokensForExactTokens(
+        amountOut,
+        MaxUint256,
+        path,
+        wallet.address,
+        MaxUint256,
+        [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG, EMPTY_SWAP_SIG],
+        overrides
+      )
+      expect(await USDC.balanceOf(wallet.address)).to.eq(balanceBefore.sub(amountIn))
+
+    })
+
+    it('ETH -> DAI -> wLINK (multihop)', async () => {
+      const LIQUIDITY_AMOUNT = expandTo18Decimals(1000)
+      const EthAmount = expandTo18Decimals(10)
+
+      const weth = await liquidityRouter.WETH()
+      // deploy DAI
+      const DAI = await deployContract(wallet, DAIContract, [LIQUIDITY_AMOUNT.mul('4')])
+
+      // deploy wLink2
+      await wSecFactory.createWSec('wLink2', 'wLink2', 18)
+      const { wSec: wlinkTokenAddress } = await wSecFactory.getWSecUnpacked('wLink2', 'wLink2', 18)
+      const WLINK = new Contract(wlinkTokenAddress, JSON.stringify(IxsWSec.abi), provider).connect(wallet)
+      await WLINK.mint(wallet.address, LIQUIDITY_AMOUNT.mul(2))
+
+      const recipient = ethers.Wallet.createRandom()
+      
+      const deadline = MaxUint256
+      const nonce = await WLINK.swapNonces(wallet.address)
+      const digests = Array(5)
+      const authorizations = Array(5)
+      for(let i=0;i<5;i++) {
+        digests[i] = await getSwapDigest(
+          WLINK,
+          { operator: wallet.address, spender: wallet.address },
+          nonce.add(i),
+          deadline
+        )
+        const { v, r, s } = ecsign(Buffer.from(digests[i].slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+        authorizations[i] = {
+          operator: wallet.address,
+          deadline,
+          v,
+          r: hexlify(r),
+          s: hexlify(s),
+        }
+      }
+      
+      await DAI.approve(liquidityRouter.address, MaxUint256)
+      await WLINK.approve(liquidityRouter.address, MaxUint256)
+
+
+      // add DAI<>wLink2 liquitity
+      await liquidityRouter.addLiquidityETH(
+        DAI.address,
+        LIQUIDITY_AMOUNT,
+        0,
+        0,
+        wallet.address,
+        MaxUint256,
+        false,
+        {value: EthAmount}
+      )
+
+      // add wLink2<>WETH liquitity
+      await liquidityRouter.addLiquidity(
+        DAI.address,
+        WLINK.address,
+        LIQUIDITY_AMOUNT,
+        LIQUIDITY_AMOUNT,
+        0,
+        0,
+        wallet.address,
+        MaxUint256,
+        false
+      )
+    
+      await DAI.approve(swapRouter.address, MaxUint256)
+      await WLINK.approve(swapRouter.address, MaxUint256)
+
+      let amountIn = expandTo18Decimals(1);
+      let path = [weth, DAI.address, WLINK.address]
+      let amountOut = (await swapRouter.getAmountsOut(amountIn, path))[path.length - 1]
+      let balanceBefore = await WLINK.balanceOf(wallet.address)
+
+      await swapRouter.swapExactETHForTokens(
+        0,
+        path,
+        wallet.address,
+        MaxUint256,
+        [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG, authorizations[0]],
+        {
+          value: amountIn,
+          gasLimit: 9999999
+        }
+      )
+      expect(await WLINK.balanceOf(wallet.address)).to.eq(balanceBefore.add(amountOut))
+
+      amountOut = expandTo18Decimals(1);
+      path = [WLINK.address, DAI.address, weth]
+      amountIn = (await swapRouter.getAmountsIn(amountOut, path))[0]
+      balanceBefore = await WLINK.balanceOf(wallet.address)
+
+      await swapRouter.swapTokensForExactETH(
+        amountOut,
+        MaxUint256,
+        path,
+        wallet.address,
+        MaxUint256,
+        [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG, EMPTY_SWAP_SIG],
+        {
+          gasLimit: 9999999
+        }
+      )
+      expect(await WLINK.balanceOf(wallet.address)).to.eq(balanceBefore.sub(amountIn))
+
+      
+      amountIn = expandTo18Decimals(100);
+      path = [WLINK.address, DAI.address, weth]
+      amountOut = (await swapRouter.getAmountsOut(amountIn, path))[path.length - 1]
+      balanceBefore = await provider.getBalance(recipient.address)
+
+
+      await swapRouter.swapExactTokensForETH(
+        amountIn,
+        0,
+        path,
+        recipient.address,
+        MaxUint256,
+        [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG, EMPTY_SWAP_SIG],
+        {
+          gasLimit: 9999999
+        }
+      )
+      expect(await provider.getBalance(recipient.address)).to.eq(balanceBefore.add(amountOut))
+
+      amountOut = expandTo18Decimals(100);
+      path = [weth, DAI.address, WLINK.address]
+      amountIn = (await swapRouter.getAmountsIn(amountIn, path))[0]
+      balanceBefore = await WLINK.balanceOf(wallet.address)
+
+
+      await swapRouter.swapETHForExactTokens(
+        amountOut,
+        path,
+        wallet.address,
+        MaxUint256,
+        [EMPTY_SWAP_SIG, EMPTY_SWAP_SIG, authorizations[1]],
+        {
+          value: amountIn,
+          gasLimit: 9999999
+        }
+      )
+      expect(await WLINK.balanceOf(wallet.address)).to.eq(balanceBefore.add(amountOut))
+
     })
   })
 })
